@@ -7,7 +7,10 @@ import { AIGatewayClient } from './lib/ai-gateway';
 import { RAGSystem } from './lib/rag-system';
 import { MCPClient } from './lib/mcp-client';
 import { DockerHubClient } from './lib/docker-hub';
-import { MasterControlAgent } from './agents/master-control';
+import { MasterAgent } from './services/master-agent';
+import { ResourceManager } from './services/resource-manager';
+import { RAGService } from './services/rag-service';
+import { MigrationRunner } from './services/migration-runner';
 import { AgentState } from './durable-objects/agent-state';
 import { SSHSession } from './durable-objects/ssh-session';
 import mcpCF from './routes/mcp-cf';
@@ -27,28 +30,52 @@ app.route('/api/mcp-awesome', mcpAwesome);
 // Mount Settings routes
 app.route('/api/settings', settings);
 
-// Health check
-app.get('/health', (c) => {
+// Health check with database status
+app.get('/health', async (c) => {
+  const migration = new MigrationRunner(c.env);
+  const dbHealth = await migration.checkHealth();
+
   return c.json({
-    status: 'healthy',
+    status: dbHealth.healthy ? 'healthy' : 'unhealthy',
     timestamp: Date.now(),
-    service: 'mas-control-agent',
+    service: 'master-control-agent',
+    database: dbHealth,
   });
+});
+
+// Database migration endpoint
+app.post('/api/system/migrate', async (c) => {
+  try {
+    const migration = new MigrationRunner(c.env);
+    await migration.runMigrations();
+    return c.json({
+      success: true,
+      message: 'Database migrations completed successfully',
+    });
+  } catch (error: any) {
+    return c.json({
+      success: false,
+      error: error.message,
+    }, 500);
+  }
 });
 
 // ====================Master Control Agent ====================
 
 app.post('/api/master/command', async (c) => {
-  const { command } = await c.req.json();
+  const { command, context } = await c.req.json();
 
   if (!command) {
     return c.json({ error: 'Command required' }, 400);
   }
 
-  const master = new MasterControlAgent(c.env);
+  const master = new MasterAgent(c.env);
 
   try {
-    const result = await master.processCommand(command);
+    const result = await master.processCommand({
+      userMessage: command,
+      context,
+    });
     return c.json(result);
   } catch (error: any) {
     return c.json({
@@ -57,6 +84,12 @@ app.post('/api/master/command', async (c) => {
       success: false,
     }, 500);
   }
+});
+
+app.get('/api/master/status', async (c) => {
+  const master = new MasterAgent(c.env);
+  const status = await master.getStatus();
+  return c.json(status);
 });
 
 // ==================== Agent Management ====================
@@ -262,6 +295,102 @@ app.get('/api/cf/vectorize', async (c) => {
   const cfAPI = new CloudflareAPI(c.env);
   const indexes = await cfAPI.listVectorizeIndexes();
   return c.json({ indexes });
+});
+
+// ==================== Resource Manager ====================
+
+app.post('/api/resources/kv', async (c) => {
+  const { name } = await c.req.json();
+  const rm = new ResourceManager(c.env);
+  const result = await rm.createKVNamespace(name);
+  return c.json({ success: true, ...result });
+});
+
+app.post('/api/resources/d1', async (c) => {
+  const { name } = await c.req.json();
+  const rm = new ResourceManager(c.env);
+  const result = await rm.createD1Database(name);
+  return c.json({ success: true, ...result });
+});
+
+app.post('/api/resources/r2', async (c) => {
+  const { name } = await c.req.json();
+  const rm = new ResourceManager(c.env);
+  const result = await rm.createR2Bucket(name);
+  return c.json({ success: true, ...result });
+});
+
+app.post('/api/resources/vectorize', async (c) => {
+  const { name, dimensions, metric } = await c.req.json();
+  const rm = new ResourceManager(c.env);
+  const result = await rm.createVectorizeIndex(name, dimensions, metric);
+  return c.json({ success: true, ...result });
+});
+
+app.post('/api/resources/hyperdrive', async (c) => {
+  const { name, connectionString, database } = await c.req.json();
+  const rm = new ResourceManager(c.env);
+  const result = await rm.createHyperdrive(name, connectionString, database);
+  return c.json({ success: true, ...result });
+});
+
+app.post('/api/resources/queue', async (c) => {
+  const { name } = await c.req.json();
+  const rm = new ResourceManager(c.env);
+  const result = await rm.createQueue(name);
+  return c.json({ success: true, ...result });
+});
+
+app.get('/api/resources', async (c) => {
+  const type = c.req.query('type');
+  const rm = new ResourceManager(c.env);
+  const resources = await rm.listResources(type);
+  return c.json({ resources });
+});
+
+app.delete('/api/resources/:type/:id', async (c) => {
+  const type = c.req.param('type');
+  const id = c.req.param('id');
+  const rm = new ResourceManager(c.env);
+  await rm.deleteResource(id, type);
+  return c.json({ success: true });
+});
+
+// ==================== RAG Service ====================
+
+app.post('/api/rag-service/load', async (c) => {
+  const { documentId, documentType, content, metadata } = await c.req.json();
+  const rag = new RAGService(c.env);
+  const result = await rag.loadDocument(documentId, documentType, content, metadata);
+  return c.json({ success: true, ...result });
+});
+
+app.post('/api/rag-service/search', async (c) => {
+  const { query, topK, documentType } = await c.req.json();
+  const rag = new RAGService(c.env);
+  const results = await rag.searchRelevantChunks(query, topK, documentType);
+  return c.json({ results });
+});
+
+app.get('/api/rag-service/context', async (c) => {
+  const query = c.req.query('query');
+  const maxTokens = parseInt(c.req.query('maxTokens') || '2000');
+  const rag = new RAGService(c.env);
+  const context = await rag.getContext(query!, maxTokens);
+  return c.json({ context });
+});
+
+app.delete('/api/rag-service/documents/:id', async (c) => {
+  const documentId = c.req.param('id');
+  const rag = new RAGService(c.env);
+  await rag.deleteDocument(documentId);
+  return c.json({ success: true });
+});
+
+app.get('/api/rag-service/statistics', async (c) => {
+  const rag = new RAGService(c.env);
+  const stats = await rag.getStatistics();
+  return c.json(stats);
 });
 
 // ==================== Docker Hub ====================

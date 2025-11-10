@@ -1,177 +1,168 @@
--- Agents Registry
+-- Master Control Agent - D1 Database Schema
+-- Complete schema for agent state, tasks, credentials, and RAG
+
+-- ==================== AGENTS ====================
 CREATE TABLE IF NOT EXISTS agents (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  status TEXT DEFAULT 'idle',
-  capabilities TEXT, -- JSON
-  config TEXT, -- JSON
-  last_heartbeat INTEGER,
-  created_at INTEGER DEFAULT (unixepoch()),
-  updated_at INTEGER DEFAULT (unixepoch())
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('utility', 'learning', 'dynamic', 'react', 'infrastructure', 'master')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'paused', 'stopped')),
+    capabilities TEXT NOT NULL, -- JSON: {canManageInfrastructure, canDeployWorkers, etc.}
+    model TEXT DEFAULT 'dynamic/RE_Ant',
+    temperature REAL DEFAULT 0.7,
+    max_tokens INTEGER DEFAULT 4096,
+    system_prompt TEXT,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    metadata TEXT -- JSON: additional config
 );
 
-CREATE INDEX idx_agents_status ON agents(status);
-CREATE INDEX idx_agents_type ON agents(type);
-
--- Tasks Queue
+-- ==================== TASKS ====================
 CREATE TABLE IF NOT EXISTS tasks (
-  id TEXT PRIMARY KEY,
-  agent_id TEXT,
-  type TEXT NOT NULL,
-  payload TEXT, -- JSON
-  status TEXT DEFAULT 'pending',
-  priority INTEGER DEFAULT 0,
-  retry_count INTEGER DEFAULT 0,
-  max_retries INTEGER DEFAULT 3,
-  result TEXT, -- JSON
-  error TEXT,
-  created_at INTEGER DEFAULT (unixepoch()),
-  started_at INTEGER,
-  completed_at INTEGER,
-  FOREIGN KEY (agent_id) REFERENCES agents(id)
+    id TEXT PRIMARY KEY,
+    agent_id TEXT,
+    type TEXT NOT NULL, -- 'deploy_worker', 'create_binding', 'query_database', etc.
+    payload TEXT NOT NULL, -- JSON: task parameters
+    priority INTEGER DEFAULT 5,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'failed')),
+    retry_count INTEGER DEFAULT 0,
+    max_retries INTEGER DEFAULT 3,
+    result TEXT, -- JSON: task result
+    error TEXT,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    started_at INTEGER,
+    completed_at INTEGER,
+    FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_tasks_status ON tasks(status);
-CREATE INDEX idx_tasks_priority ON tasks(priority DESC);
-CREATE INDEX idx_tasks_agent_id ON tasks(agent_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_agent_id ON tasks(agent_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 
--- Cloudflare Resources
+-- ==================== CREDENTIALS ====================
+CREATE TABLE IF NOT EXISTS credentials (
+    id TEXT PRIMARY KEY,
+    service TEXT NOT NULL, -- 'github', 'aws', 'gcp', etc.
+    credential_type TEXT NOT NULL, -- 'api_key', 'oauth_token', 'service_account', etc.
+    encrypted_value TEXT NOT NULL, -- Encrypted credential data
+    env_var_name TEXT NOT NULL, -- 'GITHUB_TOKEN', 'AWS_ACCESS_KEY_ID', etc.
+    description TEXT,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    expires_at INTEGER
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_credentials_env_var ON credentials(env_var_name);
+
+-- ==================== WORKER DEPLOYMENTS ====================
+CREATE TABLE IF NOT EXISTS deployments (
+    id TEXT PRIMARY KEY,
+    worker_name TEXT NOT NULL,
+    script_content TEXT NOT NULL,
+    bindings TEXT, -- JSON: KV, D1, R2, etc. bindings
+    environment_vars TEXT, -- JSON: environment variables
+    routes TEXT, -- JSON: routes configuration
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'deploying', 'active', 'failed', 'deleted')),
+    worker_url TEXT,
+    deployment_metadata TEXT, -- JSON: CF deployment response
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    deployed_at INTEGER,
+    error TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status);
+CREATE INDEX IF NOT EXISTS idx_deployments_worker_name ON deployments(worker_name);
+
+-- ==================== RAG DOCUMENT CHUNKS ====================
+CREATE TABLE IF NOT EXISTS document_chunks (
+    id TEXT PRIMARY KEY,
+    document_id TEXT NOT NULL,
+    document_type TEXT NOT NULL, -- 'code', 'documentation', 'api_response', 'user_note'
+    content TEXT NOT NULL,
+    chunk_index INTEGER NOT NULL,
+    metadata TEXT, -- JSON: file_path, language, tags, etc.
+    embedding_id TEXT, -- Reference to Vectorize embedding
+    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON document_chunks(document_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_type ON document_chunks(document_type);
+
+-- ==================== CONVERSATION HISTORY ====================
+CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,
+    user_message TEXT NOT NULL,
+    agent_response TEXT NOT NULL,
+    intent TEXT, -- Classified intent: 'deploy_worker', 'query_data', 'manage_resource'
+    entities TEXT, -- JSON: extracted entities
+    context TEXT, -- JSON: conversation context
+    agent_id TEXT,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_created_at ON conversations(created_at);
+CREATE INDEX IF NOT EXISTS idx_conversations_agent_id ON conversations(agent_id);
+
+-- ==================== RESOURCE BINDINGS ====================
 CREATE TABLE IF NOT EXISTS cf_resources (
-  id TEXT PRIMARY KEY,
-  type TEXT NOT NULL, -- worker, kv, d1, r2, queue, durable_object
-  name TEXT NOT NULL,
-  account_id TEXT,
-  resource_id TEXT,
-  config TEXT, -- JSON
-  status TEXT DEFAULT 'active',
-  last_synced INTEGER,
-  created_at INTEGER DEFAULT (unixepoch())
+    id TEXT PRIMARY KEY,
+    resource_type TEXT NOT NULL CHECK(resource_type IN ('kv', 'd1', 'r2', 'vectorize', 'durable_object', 'queue', 'hyperdrive')),
+    resource_name TEXT NOT NULL,
+    resource_id TEXT, -- CF resource ID
+    configuration TEXT, -- JSON: resource config
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deleted')),
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    deleted_at INTEGER
 );
 
-CREATE INDEX idx_cf_resources_type ON cf_resources(type);
-CREATE INDEX idx_cf_resources_status ON cf_resources(status);
-CREATE UNIQUE INDEX idx_cf_resources_resource_id ON cf_resources(resource_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_resources_name_type ON cf_resources(resource_name, resource_type);
 
--- Workers Deployment
-CREATE TABLE IF NOT EXISTS worker_deployments (
-  id TEXT PRIMARY KEY,
-  worker_name TEXT NOT NULL,
-  script_content TEXT,
-  bindings TEXT, -- JSON
-  env_vars TEXT, -- JSON
-  routes TEXT, -- JSON
-  version TEXT,
-  deployed_at INTEGER,
-  status TEXT DEFAULT 'pending',
-  deployment_log TEXT,
-  created_at INTEGER DEFAULT (unixepoch())
+-- ==================== AGENT LEARNING DATA ====================
+CREATE TABLE IF NOT EXISTS learning_examples (
+    id TEXT PRIMARY KEY,
+    input_pattern TEXT NOT NULL,
+    expected_output TEXT NOT NULL,
+    actual_output TEXT,
+    success BOOLEAN,
+    feedback_score REAL,
+    metadata TEXT, -- JSON: context, tags
+    created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
-CREATE INDEX idx_worker_deployments_worker_name ON worker_deployments(worker_name);
-CREATE INDEX idx_worker_deployments_status ON worker_deployments(status);
+CREATE INDEX IF NOT EXISTS idx_learning_success ON learning_examples(success);
 
--- Docker Images
-CREATE TABLE IF NOT EXISTS docker_images (
-  id TEXT PRIMARY KEY,
-  repository TEXT NOT NULL,
-  tag TEXT NOT NULL,
-  digest TEXT,
-  manifest TEXT, -- JSON
-  last_synced INTEGER,
-  auto_deploy INTEGER DEFAULT 0,
-  worker_mapping TEXT, -- JSON - maps to worker deployments
-  created_at INTEGER DEFAULT (unixepoch()),
-  updated_at INTEGER DEFAULT (unixepoch())
+-- ==================== SYSTEM CONFIGURATION ====================
+CREATE TABLE IF NOT EXISTS system_config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    description TEXT,
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
-CREATE UNIQUE INDEX idx_docker_images_repo_tag ON docker_images(repository, tag);
-CREATE INDEX idx_docker_images_auto_deploy ON docker_images(auto_deploy);
+-- Insert default system config
+INSERT OR IGNORE INTO system_config (key, value, description) VALUES
+    ('rag_enabled', 'true', 'Enable RAG for context retrieval'),
+    ('rag_chunk_size', '1000', 'Default chunk size for RAG documents'),
+    ('rag_chunk_overlap', '200', 'Overlap between chunks'),
+    ('default_model', 'dynamic/RE_Ant', 'Default AI model to use'),
+    ('max_task_retries', '3', 'Maximum retries for failed tasks'),
+    ('auto_deploy_enabled', 'true', 'Enable automatic worker deployment');
 
--- RAG Documents
-CREATE TABLE IF NOT EXISTS rag_documents (
-  id TEXT PRIMARY KEY,
-  source_path TEXT NOT NULL,
-  source_type TEXT, -- file, url, r2
-  content_hash TEXT,
-  title TEXT,
-  content TEXT,
-  metadata TEXT, -- JSON
-  vector_id TEXT, -- Reference to Vectorize
-  chunk_count INTEGER DEFAULT 0,
-  indexed_at INTEGER,
-  created_at INTEGER DEFAULT (unixepoch()),
-  updated_at INTEGER DEFAULT (unixepoch())
+-- Insert default Master Control Agent
+INSERT OR IGNORE INTO agents (id, name, type, capabilities, system_prompt) VALUES (
+    'master-control-agent',
+    'Master Control Agent',
+    'master',
+    '{"canManageInfrastructure":true,"canDeployWorkers":true,"canAccessSSH":false,"canQueryRAG":true,"canLearn":true,"canReact":true,"canSyncDocker":false,"canUseMCP":true}',
+    'You are the Master Control Agent. You can understand natural language commands and execute them by:
+1. Deploying Cloudflare Workers
+2. Creating and managing CF resources (KV, D1, R2, Vectorize)
+3. Integrating with 71+ MCP servers for external services
+4. Querying databases and vector stores
+5. Generating code and infrastructure
+6. Managing credentials and secrets
+
+You use Cloudflare AI Gateway with the model dynamic/RE_Ant for all AI operations.
+Always respond with actionable steps and execute them autonomously.'
 );
-
-CREATE INDEX idx_rag_documents_source_path ON rag_documents(source_path);
-CREATE INDEX idx_rag_documents_content_hash ON rag_documents(content_hash);
-CREATE INDEX idx_rag_documents_indexed_at ON rag_documents(indexed_at);
-
--- MCP Servers
-CREATE TABLE IF NOT EXISTS mcp_servers (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  url TEXT NOT NULL,
-  protocol_version TEXT,
-  capabilities TEXT, -- JSON
-  auth_config TEXT, -- JSON
-  status TEXT DEFAULT 'inactive',
-  last_connected INTEGER,
-  created_at INTEGER DEFAULT (unixepoch()),
-  updated_at INTEGER DEFAULT (unixepoch())
-);
-
-CREATE INDEX idx_mcp_servers_status ON mcp_servers(status);
-CREATE UNIQUE INDEX idx_mcp_servers_url ON mcp_servers(url);
-
--- SSH Sessions
-CREATE TABLE IF NOT EXISTS ssh_sessions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT,
-  host TEXT NOT NULL,
-  port INTEGER DEFAULT 22,
-  username TEXT NOT NULL,
-  status TEXT DEFAULT 'connecting',
-  durable_object_id TEXT,
-  connected_at INTEGER,
-  disconnected_at INTEGER,
-  created_at INTEGER DEFAULT (unixepoch())
-);
-
-CREATE INDEX idx_ssh_sessions_status ON ssh_sessions(status);
-CREATE INDEX idx_ssh_sessions_user_id ON ssh_sessions(user_id);
-
--- Audit Logs
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id TEXT PRIMARY KEY,
-  user_id TEXT,
-  action TEXT NOT NULL,
-  resource_type TEXT,
-  resource_id TEXT,
-  details TEXT, -- JSON
-  ip_address TEXT,
-  user_agent TEXT,
-  timestamp INTEGER DEFAULT (unixepoch())
-);
-
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
-
--- Agent Communication
-CREATE TABLE IF NOT EXISTS agent_messages (
-  id TEXT PRIMARY KEY,
-  from_agent_id TEXT,
-  to_agent_id TEXT,
-  message_type TEXT NOT NULL,
-  payload TEXT, -- JSON
-  status TEXT DEFAULT 'pending',
-  created_at INTEGER DEFAULT (unixepoch()),
-  processed_at INTEGER,
-  FOREIGN KEY (from_agent_id) REFERENCES agents(id),
-  FOREIGN KEY (to_agent_id) REFERENCES agents(id)
-);
-
-CREATE INDEX idx_agent_messages_to_agent ON agent_messages(to_agent_id, status);
-CREATE INDEX idx_agent_messages_created_at ON agent_messages(created_at);

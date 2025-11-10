@@ -256,6 +256,23 @@ export default app;`;
   }
 
   /**
+   * Generate worker code with resource bindings
+   */
+  async generateWorkerCode(description: string, bindings: any[] = []): Promise<string> {
+    const bindingNames = bindings.map(b => b.name);
+    const bindingTypes = bindings.map(b => b.type);
+
+    const result = await this.generateWorker({
+      description,
+      bindings: bindingNames,
+      mcpServers: [],
+      requirements: [`Use these bindings: ${bindingTypes.join(', ')}`],
+    });
+
+    return result.code;
+  }
+
+  /**
    * Generate web interface code
    */
   async generateWebInterface(request: {
