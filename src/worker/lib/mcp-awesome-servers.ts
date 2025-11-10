@@ -1,5 +1,5 @@
 import { Env } from '../types/env';
-import { MCPClient } from './mcp-client';
+import { RealAwesomeIntegrations } from './real-integrations';
 
 /**
  * Awesome MCP Servers Manager
@@ -488,33 +488,25 @@ export const AWESOME_MCP_SERVERS: MCPServerDefinition[] = [
  */
 export class AwesomeMCPManager {
   private env: Env;
-  private mcpClient: MCPClient;
+  private integrations: RealAwesomeIntegrations;
   private initialized: boolean = false;
   private connectedServers: Set<string> = new Set();
 
   constructor(env: Env) {
     this.env = env;
-    this.mcpClient = new MCPClient(env);
+    this.integrations = new RealAwesomeIntegrations(env);
   }
 
   /**
-   * Initialize connections to all configured MCP servers
+   * Initialize - check which services have credentials configured
    */
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // Initialize MCP client
-    await this.mcpClient.initialize();
-
-    // Connect to servers based on available credentials
+    // Check which services are configured
     for (const server of AWESOME_MCP_SERVERS) {
       if (this.canConnect(server)) {
-        try {
-          await this.connectServer(server);
-          this.connectedServers.add(server.id);
-        } catch (error) {
-          console.error(`Failed to connect to ${server.name}:`, error);
-        }
+        this.connectedServers.add(server.id);
       }
     }
 
@@ -535,19 +527,6 @@ export class AwesomeMCPManager {
     }
 
     return false;
-  }
-
-  /**
-   * Connect to a specific MCP server
-   */
-  private async connectServer(server: MCPServerDefinition): Promise<void> {
-    // Register server with MCP client
-    await this.mcpClient.registerServer({
-      id: server.id,
-      name: server.name,
-      url: server.url || `mcp://${server.id}`,
-      capabilities: server.capabilities,
-    });
   }
 
   /**
@@ -572,165 +551,162 @@ export class AwesomeMCPManager {
   }
 
   /**
-   * Call a tool on any MCP server
+   * Call a tool - NOT IMPLEMENTED (use specific methods instead)
    */
   async callTool(serverId: string, toolName: string, params: any): Promise<any> {
-    if (!this.connectedServers.has(serverId)) {
-      throw new Error(`Server ${serverId} is not connected`);
-    }
-
-    return await this.mcpClient.callTool(serverId, toolName, params);
+    throw new Error(`Generic callTool not supported. Use specific integration methods like github_listRepos(), slack_sendMessage(), etc.`);
   }
 
-  // ==================== GITHUB MCP ====================
+  // ==================== GITHUB - REAL API ====================
 
   async github_listRepos(owner?: string): Promise<any> {
-    return this.callTool('mcp-github', 'list_repos', { owner });
+    return await this.integrations.github_listRepos(owner);
   }
 
   async github_readFile(owner: string, repo: string, path: string): Promise<any> {
-    return this.callTool('mcp-github', 'read_file', { owner, repo, path });
+    return await this.integrations.github_readFile(owner, repo, path);
   }
 
   async github_createIssue(owner: string, repo: string, title: string, body: string): Promise<any> {
-    return this.callTool('mcp-github', 'create_issue', { owner, repo, title, body });
-  }
-
-  async github_createPR(owner: string, repo: string, title: string, head: string, base: string): Promise<any> {
-    return this.callTool('mcp-github', 'create_pr', { owner, repo, title, head, base });
+    return await this.integrations.github_createIssue(owner, repo, title, body);
   }
 
   async github_searchCode(query: string): Promise<any> {
-    return this.callTool('mcp-github', 'search_code', { query });
+    return await this.integrations.github_searchCode(query);
   }
 
-  // ==================== SLACK MCP ====================
+  // ==================== SLACK - REAL API ====================
 
   async slack_sendMessage(channel: string, text: string): Promise<any> {
-    return this.callTool('mcp-slack', 'send_message', { channel, text });
+    return await this.integrations.slack_sendMessage(channel, text);
   }
 
   async slack_listChannels(): Promise<any> {
-    return this.callTool('mcp-slack', 'list_channels', {});
+    return await this.integrations.slack_listChannels();
   }
 
   async slack_readHistory(channel: string, limit?: number): Promise<any> {
-    return this.callTool('mcp-slack', 'read_history', { channel, limit });
+    return await this.integrations.slack_readHistory(channel, limit);
   }
 
-  // ==================== FILESYSTEM MCP ====================
-
-  async filesystem_readFile(path: string): Promise<any> {
-    return this.callTool('mcp-filesystem', 'read_file', { path });
-  }
-
-  async filesystem_writeFile(path: string, content: string): Promise<any> {
-    return this.callTool('mcp-filesystem', 'write_file', { path, content });
-  }
-
-  async filesystem_listDirectory(path: string): Promise<any> {
-    return this.callTool('mcp-filesystem', 'list_directory', { path });
-  }
-
-  async filesystem_searchFiles(pattern: string, path?: string): Promise<any> {
-    return this.callTool('mcp-filesystem', 'search_files', { pattern, path });
-  }
-
-  // ==================== POSTGRES MCP ====================
-
-  async postgres_query(sql: string, params?: any[]): Promise<any> {
-    return this.callTool('mcp-postgres', 'query', { sql, params });
-  }
-
-  async postgres_schemaInspect(): Promise<any> {
-    return this.callTool('mcp-postgres', 'schema_inspect', {});
-  }
-
-  // ==================== PUPPETEER/BROWSER MCP ====================
+  // ==================== BROWSER - CLOUDFLARE API ====================
 
   async browser_navigate(url: string): Promise<any> {
-    const serverId = this.connectedServers.has('mcp-puppeteer') ? 'mcp-puppeteer' : 'playwright';
-    return this.callTool(serverId, 'navigate', { url });
+    return await this.integrations.browser_navigate(url);
   }
 
   async browser_screenshot(url: string, fullPage?: boolean): Promise<any> {
-    const serverId = this.connectedServers.has('mcp-puppeteer') ? 'mcp-puppeteer' : 'playwright';
-    return this.callTool(serverId, 'screenshot', { url, fullPage });
+    return await this.integrations.browser_screenshot(url, fullPage);
   }
 
-  async browser_click(selector: string): Promise<any> {
-    const serverId = this.connectedServers.has('mcp-puppeteer') ? 'mcp-puppeteer' : 'playwright';
-    return this.callTool(serverId, 'click', { selector });
+  // ==================== SEARCH - REAL APIs ====================
+
+  async search_web(query: string, provider?: 'brave' | 'google' | 'tavily'): Promise<any> {
+    switch (provider) {
+      case 'brave':
+        return await this.integrations.search_brave(query);
+      case 'google':
+        return await this.integrations.search_google(query);
+      case 'tavily':
+        return await this.integrations.search_tavily(query);
+      default:
+        // Default to Brave if available
+        if (this.env.BRAVE_API_KEY) {
+          return await this.integrations.search_brave(query);
+        } else if (this.env.GOOGLE_API_KEY) {
+          return await this.integrations.search_google(query);
+        } else if (this.env.TAVILY_API_KEY) {
+          return await this.integrations.search_tavily(query);
+        }
+        throw new Error('No search API configured');
+    }
   }
 
-  // ==================== KUBERNETES MCP ====================
-
-  async k8s_getPods(namespace?: string): Promise<any> {
-    return this.callTool('kubernetes', 'get_pods', { namespace });
-  }
-
-  async k8s_getLogs(pod: string, namespace?: string): Promise<any> {
-    return this.callTool('kubernetes', 'logs', { pod, namespace });
-  }
-
-  // ==================== DOCKER MCP ====================
-
-  async docker_listContainers(): Promise<any> {
-    return this.callTool('docker', 'list_containers', {});
-  }
-
-  async docker_startContainer(id: string): Promise<any> {
-    return this.callTool('docker', 'start_container', { id });
-  }
-
-  async docker_stopContainer(id: string): Promise<any> {
-    return this.callTool('docker', 'stop_container', { id });
-  }
-
-  // ==================== NOTION MCP ====================
+  // ==================== NOTION - REAL API ====================
 
   async notion_queryDatabase(databaseId: string, filter?: any): Promise<any> {
-    return this.callTool('notion', 'query_database', { databaseId, filter });
+    return await this.integrations.notion_queryDatabase(databaseId, filter);
   }
 
   async notion_createPage(parentId: string, properties: any): Promise<any> {
-    return this.callTool('notion', 'create_page', { parentId, properties });
+    return await this.integrations.notion_createPage(parentId, properties);
   }
 
-  // ==================== SEARCH MCP ====================
+  // ==================== LINEAR - REAL API ====================
 
-  async search_web(query: string, provider?: 'brave' | 'google' | 'tavily' | 'exa'): Promise<any> {
-    const serverId = provider ? `${provider === 'brave' ? 'mcp-brave-search' : provider}` : 'mcp-brave-search';
-    return this.callTool(serverId, 'web_search', { query });
+  async linear_createIssue(title: string, description: string, teamId: string): Promise<any> {
+    return await this.integrations.linear_createIssue(title, description, teamId);
   }
 
-  // ==================== MEMORY MCP ====================
+  // ==================== STRIPE - REAL API ====================
+
+  async stripe_createPaymentIntent(amount: number, currency?: string): Promise<any> {
+    return await this.integrations.stripe_createPaymentIntent(amount, currency);
+  }
+
+  async stripe_listCustomers(limit?: number): Promise<any> {
+    return await this.integrations.stripe_listCustomers(limit);
+  }
+
+  // ==================== YOUTUBE - REAL API ====================
+
+  async youtube_search(query: string, maxResults?: number): Promise<any> {
+    return await this.integrations.youtube_search(query, maxResults);
+  }
+
+  // ==================== AIRTABLE - REAL API ====================
+
+  async airtable_listRecords(tableName: string): Promise<any> {
+    return await this.integrations.airtable_listRecords(tableName);
+  }
+
+  async airtable_createRecord(tableName: string, fields: Record<string, any>): Promise<any> {
+    return await this.integrations.airtable_createRecord(tableName, fields);
+  }
+
+  // ==================== UNSUPPORTED IN WORKERS ====================
+
+  async postgres_query(sql: string, params?: any[]): Promise<any> {
+    return await this.integrations.postgres_query(sql, params);
+  }
+
+  async filesystem_readFile(path: string): Promise<any> {
+    throw new Error('Local filesystem not available in Workers. Use R2 or KV instead.');
+  }
+
+  async filesystem_writeFile(path: string, content: string): Promise<any> {
+    throw new Error('Local filesystem not available in Workers. Use R2 or KV instead.');
+  }
+
+  async filesystem_listDirectory(path: string): Promise<any> {
+    throw new Error('Local filesystem not available in Workers. Use R2 or KV instead.');
+  }
+
+  async k8s_getPods(namespace?: string): Promise<any> {
+    return await this.integrations.kubernetes_getPods(namespace || 'default');
+  }
+
+  async k8s_getLogs(pod: string, namespace?: string): Promise<any> {
+    throw new Error('Use Kubernetes REST API with fetch() for logs');
+  }
+
+  async docker_listContainers(): Promise<any> {
+    return await this.integrations.docker_listContainers();
+  }
+
+  async docker_startContainer(id: string): Promise<any> {
+    throw new Error('Use Docker REST API with fetch() for container management');
+  }
 
   async memory_store(key: string, value: any, metadata?: any): Promise<any> {
-    return this.callTool('mcp-memory', 'store_memory', { key, value, metadata });
+    // Use KV for memory storage
+    await this.env.KV.put(key, JSON.stringify({ value, metadata }));
+    return { stored: true, key };
   }
 
   async memory_retrieve(query: string): Promise<any> {
-    return this.callTool('mcp-memory', 'retrieve_memory', { query });
-  }
-
-  // ==================== FETCH MCP ====================
-
-  async fetch_url(url: string, convertToMarkdown?: boolean): Promise<any> {
-    return this.callTool('mcp-fetch', 'fetch_url', { url, convertToMarkdown });
-  }
-
-  // ==================== GIT MCP ====================
-
-  async git_readCommits(repo: string, limit?: number): Promise<any> {
-    return this.callTool('mcp-git', 'read_commits', { repo, limit });
-  }
-
-  async git_diff(repo: string, from: string, to: string): Promise<any> {
-    return this.callTool('mcp-git', 'diff_files', { repo, from, to });
-  }
-
-  async git_searchCode(repo: string, query: string): Promise<any> {
-    return this.callTool('mcp-git', 'search_code', { repo, query });
+    // Retrieve from KV
+    const data = await this.env.KV.get(query);
+    return data ? JSON.parse(data) : null;
   }
 }
