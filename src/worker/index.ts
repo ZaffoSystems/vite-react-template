@@ -7,9 +7,11 @@ import { AIGatewayClient } from './lib/ai-gateway';
 import { RAGSystem } from './lib/rag-system';
 import { MCPClient } from './lib/mcp-client';
 import { DockerHubClient } from './lib/docker-hub';
+import { MasterControlAgent } from './agents/master-control';
 import { AgentState } from './durable-objects/agent-state';
 import { SSHSession } from './durable-objects/ssh-session';
 import mcpCF from './routes/mcp-cf';
+import mcpAwesome from './routes/mcp-awesome';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -18,6 +20,9 @@ app.use('/*', cors());
 // Mount CF MCP routes
 app.route('/api/mcp-cf', mcpCF);
 
+// Mount Awesome MCP routes
+app.route('/api/mcp-awesome', mcpAwesome);
+
 // Health check
 app.get('/health', (c) => {
   return c.json({
@@ -25,6 +30,29 @@ app.get('/health', (c) => {
     timestamp: Date.now(),
     service: 'mas-control-agent',
   });
+});
+
+// ====================Master Control Agent ====================
+
+app.post('/api/master/command', async (c) => {
+  const { command } = await c.req.json();
+
+  if (!command) {
+    return c.json({ error: 'Command required' }, 400);
+  }
+
+  const master = new MasterControlAgent(c.env);
+
+  try {
+    const result = await master.processCommand(command);
+    return c.json(result);
+  } catch (error: any) {
+    return c.json({
+      error: error.message,
+      command,
+      success: false,
+    }, 500);
+  }
 });
 
 // ==================== Agent Management ====================

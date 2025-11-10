@@ -52,67 +52,67 @@ export default function ChatInterface() {
     setLoading(true);
 
     try {
-      // Create task for agent
-      const taskRes = await fetch('/api/tasks', {
+      // Use master control agent
+      const response = await fetch('/api/master/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'chat',
-          agentId: selectedAgent,
-          payload: { message: input },
-          priority: 1,
-        }),
+        body: JSON.stringify({ command: input }),
       });
 
-      const { taskId } = await taskRes.json();
+      const result = await response.json();
 
-      // Poll for result
-      let attempts = 0;
-      const maxAttempts = 60;
+      setLoading(false);
 
-      const pollResult = setInterval(async () => {
-        attempts++;
+      if (result.success !== false) {
+        // Format the response
+        let content = '';
 
-        if (attempts > maxAttempts) {
-          clearInterval(pollResult);
-          setLoading(false);
-          const errorMessage: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: 'Request timed out. Please try again.',
-            timestamp: Date.now(),
-          };
-          setMessages(prev => [...prev, errorMessage]);
-          return;
+        if (result.plan) {
+          content += `**Plan**: ${result.plan.goal}\n\n`;
         }
 
-        const statusRes = await fetch(`/api/tasks/${taskId}`);
-        const task = await statusRes.json();
+        if (result.execution) {
+          content += `**Execution**:\n`;
+          result.execution.forEach((exec: any, idx: number) => {
+            content += `${idx + 1}. ${exec.step}: ${exec.success ? '✓' : '✗'}\n`;
 
-        if (task.status === 'completed') {
-          clearInterval(pollResult);
-          setLoading(false);
+            if (exec.result?.deployed) {
+              content += `   → Deployed: ${exec.result.name}\n`;
+              content += `   → URL: ${exec.result.url}\n`;
+            }
 
-          const assistantMessage: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: task.result?.response || JSON.stringify(task.result),
-            timestamp: Date.now(),
-          };
-          setMessages(prev => [...prev, assistantMessage]);
-        } else if (task.status === 'failed') {
-          clearInterval(pollResult);
-          setLoading(false);
+            if (exec.result?.agent) {
+              content += `   → Sub-agent: ${exec.result.agent}\n`;
+              content += `   → URL: ${exec.result.url}\n`;
+            }
 
-          const errorMessage: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: `Error: ${task.error}`,
-            timestamp: Date.now(),
-          };
-          setMessages(prev => [...prev, errorMessage]);
+            if (exec.error) {
+              content += `   → Error: ${exec.error}\n`;
+            }
+          });
         }
-      }, 1000);
+
+        if (!content) {
+          content = JSON.stringify(result, null, 2);
+        }
+
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content,
+          timestamp: Date.now(),
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
+        const errorMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Error: ${result.error || 'Command failed'}`,
+          timestamp: Date.now(),
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
     } catch (error: any) {
       setLoading(false);
       const errorMessage: Message = {
