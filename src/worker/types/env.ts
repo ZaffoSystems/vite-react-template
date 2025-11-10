@@ -150,6 +150,49 @@ export interface Env {
 
   // Maps MCP
   GOOGLE_MAPS_API_KEY?: string;
+
+  // Email Services (SendGrid, Mailgun, Resend)
+  SENDGRID_API_KEY?: string;
+  SENDGRID_FROM_EMAIL?: string;
+  MAILGUN_API_KEY?: string;
+  MAILGUN_DOMAIN?: string;
+  MAILGUN_FROM_EMAIL?: string;
+  RESEND_API_KEY?: string;
+  RESEND_FROM_EMAIL?: string;
+
+  // Database Services via HTTP
+  NEON_DATABASE_URL?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_ANON_KEY?: string;
+  PLANETSCALE_HOST?: string;
+  PLANETSCALE_USERNAME?: string;
+  PLANETSCALE_PASSWORD?: string;
+  TURSO_DATABASE_URL?: string;
+  TURSO_AUTH_TOKEN?: string;
+
+  // Vector Databases
+  PINECONE_API_KEY?: string;
+  PINECONE_ENVIRONMENT?: string;
+  PINECONE_INDEX?: string;
+  QDRANT_URL?: string;
+  QDRANT_API_KEY?: string;
+  WEAVIATE_URL?: string;
+  WEAVIATE_API_KEY?: string;
+
+  // Code Execution & Browser
+  E2B_API_KEY?: string;
+  BROWSERLESS_API_KEY?: string;
+
+  // Additional Services
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_PHONE_NUMBER?: string;
+  FIGMA_ACCESS_TOKEN?: string;
+  VERCEL_TOKEN?: string;
+  AZURE_STORAGE_ACCOUNT_KEY?: string;
 }
 
 export interface AgentCapabilities {

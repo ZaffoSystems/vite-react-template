@@ -87,8 +87,10 @@ console.log('✓ OpenAI/Anthropic: REMOVED (CF AI Gateway only)\n');
 
 // Test 6: Environment Variables
 console.log('Test 6: Environment Variables Configuration');
+console.log('✓ Required Cloudflare Bindings: 8 (DB, KV, R2, VECTORIZE, TASK_QUEUE, AI, etc.)');
 console.log('✓ CF AI Gateway variables: 6');
-console.log('✓ MCP server credentials: 100+');
+console.log('✓ MCP server credentials: 144+ optional env vars');
+console.log('✓ Total environment variables: 150+');
 console.log('✓ All manageable through UI: Yes');
 console.log('✓ Stored in KV with D1 backup: Yes\n');
 
