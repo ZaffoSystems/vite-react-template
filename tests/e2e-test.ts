@@ -118,9 +118,7 @@ console.log('✓ TaskMonitor - Real-time monitoring');
 console.log('✓ InfrastructureControl - CF resources');
 console.log('✓ MCPServers - 71 MCP servers with tabs');
 console.log('✓ Settings - Credentials management');
-console.log('✓ ResourceManager - Auto-provision CF resources');
-console.log('✓ RAGService - Document loading and semantic search');
-console.log('✓ Total pages: 9\n');
+console.log('✓ Total pages: 7\n');
 
 // Test 9: Example Workflows
 console.log('Test 9: Example Workflows');
@@ -224,7 +222,7 @@ console.log('  • MCP Integration Methods: 107');
 console.log('  • Fully Functional Methods: 107 (100%)');
 console.log('  • Environment Variables: 156');
 console.log('  • API Endpoints: 10+ route groups');
-console.log('  • UI Components: 9 pages');
+console.log('  • UI Components: 7 pages');
 console.log('  • Workflow Support: 100%');
 console.log('  • CF AI Gateway Compliance: 100%');
 console.log('  • Database Tables: 10');
