@@ -699,14 +699,344 @@ export class AwesomeMCPManager {
   }
 
   async memory_store(key: string, value: any, metadata?: any): Promise<any> {
-    // Use KV for memory storage
-    await this.env.KV.put(key, JSON.stringify({ value, metadata }));
-    return { stored: true, key };
+    return await this.integrations.memory_store(key, { value, metadata });
   }
 
   async memory_retrieve(query: string): Promise<any> {
-    // Retrieve from KV
-    const data = await this.env.KV.get(query);
-    return data ? JSON.parse(data) : null;
+    return await this.integrations.memory_retrieve(query);
+  }
+
+  async memory_delete(key: string): Promise<any> {
+    return await this.integrations.memory_delete(key);
+  }
+
+  async memory_list(prefix?: string): Promise<any> {
+    return await this.integrations.memory_list(prefix);
+  }
+
+  // ==================== GITLAB - REAL API ====================
+
+  async gitlab_listProjects(): Promise<any> {
+    return await this.integrations.gitlab_listProjects();
+  }
+
+  async gitlab_createMR(projectId: string, sourceBranch: string, targetBranch: string, title: string): Promise<any> {
+    return await this.integrations.gitlab_createMR(projectId, sourceBranch, targetBranch, title);
+  }
+
+  // ==================== JIRA - REAL API ====================
+
+  async jira_createIssue(projectKey: string, summary: string, description: string, issueType?: string): Promise<any> {
+    return await this.integrations.jira_createIssue(projectKey, summary, description, issueType);
+  }
+
+  async jira_searchIssues(jql: string): Promise<any> {
+    return await this.integrations.jira_searchIssues(jql);
+  }
+
+  // ==================== DISCORD - REAL API ====================
+
+  async discord_sendMessage(channelId: string, content: string): Promise<any> {
+    return await this.integrations.discord_sendMessage(channelId, content);
+  }
+
+  async discord_listGuilds(): Promise<any> {
+    return await this.integrations.discord_listGuilds();
+  }
+
+  // ==================== TWITTER/X - REAL API ====================
+
+  async twitter_postTweet(text: string): Promise<any> {
+    return await this.integrations.twitter_postTweet(text);
+  }
+
+  async twitter_searchTweets(query: string): Promise<any> {
+    return await this.integrations.twitter_searchTweets(query);
+  }
+
+  // ==================== SHOPIFY - REAL API ====================
+
+  async shopify_listProducts(): Promise<any> {
+    return await this.integrations.shopify_listProducts();
+  }
+
+  async shopify_createProduct(title: string, price: string): Promise<any> {
+    return await this.integrations.shopify_createProduct(title, price);
+  }
+
+  // ==================== GOOGLE DRIVE - REAL API ====================
+
+  async googleDrive_listFiles(): Promise<any> {
+    return await this.integrations.googleDrive_listFiles();
+  }
+
+  // ==================== GOOGLE MAPS - REAL API ====================
+
+  async googleMaps_geocode(address: string): Promise<any> {
+    return await this.integrations.googleMaps_geocode(address);
+  }
+
+  // ==================== SENTRY - REAL API ====================
+
+  async sentry_listIssues(projectSlug: string): Promise<any> {
+    return await this.integrations.sentry_listIssues(projectSlug);
+  }
+
+  // ==================== DATADOG - REAL API ====================
+
+  async datadog_queryMetrics(query: string): Promise<any> {
+    return await this.integrations.datadog_queryMetrics(query);
+  }
+
+  // ==================== REDIS - UPSTASH REST API ====================
+
+  async redis_get(key: string): Promise<any> {
+    return await this.integrations.redis_get(key);
+  }
+
+  async redis_set(key: string, value: string): Promise<any> {
+    return await this.integrations.redis_set(key, value);
+  }
+
+  // ==================== BROWSERBASE - REAL API ====================
+
+  async browserbase_createSession(): Promise<any> {
+    return await this.integrations.browserbase_createSession();
+  }
+
+  // ==================== EXA SEARCH - REAL API ====================
+
+  async exa_search(query: string): Promise<any> {
+    return await this.integrations.exa_search(query);
+  }
+
+  // ==================== FILESYSTEM VIA R2 ====================
+
+  async filesystem_writeFileR2(path: string, content: string): Promise<any> {
+    return await this.integrations.filesystem_writeFile(path, content);
+  }
+
+  async filesystem_readFileR2(path: string): Promise<any> {
+    return await this.integrations.filesystem_readFile(path);
+  }
+
+  async filesystem_deleteFileR2(path: string): Promise<any> {
+    return await this.integrations.filesystem_deleteFile(path);
+  }
+
+  async filesystem_listFilesR2(prefix?: string): Promise<any> {
+    return await this.integrations.filesystem_listFiles(prefix);
+  }
+
+  // ==================== AWS - REST API ====================
+
+  async aws_s3_listBuckets(): Promise<any> {
+    return await this.integrations.aws_s3_listBuckets();
+  }
+
+  async aws_lambda_invoke(functionName: string, payload: any): Promise<any> {
+    return await this.integrations.aws_lambda_invoke(functionName, payload);
+  }
+
+  async aws_dynamodb_getItem(tableName: string, key: any): Promise<any> {
+    return await this.integrations.aws_dynamodb_getItem(tableName, key);
+  }
+
+  // ==================== AZURE - REST API ====================
+
+  async azure_vm_list(subscriptionId: string): Promise<any> {
+    return await this.integrations.azure_vm_list(subscriptionId);
+  }
+
+  async azure_storage_listContainers(accountName: string): Promise<any> {
+    return await this.integrations.azure_storage_listContainers(accountName);
+  }
+
+  // ==================== GCP - REST API ====================
+
+  async gcp_compute_listInstances(projectId: string, zone: string): Promise<any> {
+    return await this.integrations.gcp_compute_listInstances(projectId, zone);
+  }
+
+  async gcp_storage_listBuckets(projectId: string): Promise<any> {
+    return await this.integrations.gcp_storage_listBuckets(projectId);
+  }
+
+  // ==================== EMAIL - SENDGRID/MAILGUN/RESEND ====================
+
+  async email_sendgrid_send(to: string, subject: string, body: string): Promise<any> {
+    return await this.integrations.email_sendgrid_send(to, subject, body);
+  }
+
+  async email_mailgun_send(to: string, subject: string, body: string): Promise<any> {
+    return await this.integrations.email_mailgun_send(to, subject, body);
+  }
+
+  async email_resend_send(to: string, subject: string, body: string): Promise<any> {
+    return await this.integrations.email_resend_send(to, subject, body);
+  }
+
+  // ==================== POSTGRES VIA HTTP - NEON/SUPABASE/PLANETSCALE/TURSO ====================
+
+  async postgres_neon_query(sql: string, params?: any[]): Promise<any> {
+    return await this.integrations.postgres_neon_query(sql, params);
+  }
+
+  async postgres_supabase_query(table: string, filter?: any): Promise<any> {
+    return await this.integrations.postgres_supabase_query(table, filter);
+  }
+
+  async postgres_supabase_insert(table: string, data: any): Promise<any> {
+    return await this.integrations.postgres_supabase_insert(table, data);
+  }
+
+  async postgres_planetscale_query(sql: string): Promise<any> {
+    return await this.integrations.postgres_planetscale_query(sql);
+  }
+
+  async postgres_turso_query(sql: string): Promise<any> {
+    return await this.integrations.postgres_turso_query(sql);
+  }
+
+  // ==================== VECTOR DATABASES - REAL APIs ====================
+
+  async pinecone_upsert(namespace: string, vectors: any[]): Promise<any> {
+    return await this.integrations.pinecone_upsert(namespace, vectors);
+  }
+
+  async pinecone_query(vector: number[], topK?: number, namespace?: string): Promise<any> {
+    return await this.integrations.pinecone_query(vector, topK, namespace);
+  }
+
+  async qdrant_upsert(collectionName: string, points: any[]): Promise<any> {
+    return await this.integrations.qdrant_upsert(collectionName, points);
+  }
+
+  async qdrant_search(collectionName: string, vector: number[], limit?: number): Promise<any> {
+    return await this.integrations.qdrant_search(collectionName, vector, limit);
+  }
+
+  async weaviate_createObject(className: string, properties: any): Promise<any> {
+    return await this.integrations.weaviate_createObject(className, properties);
+  }
+
+  async weaviate_query(className: string, query: string, limit?: number): Promise<any> {
+    return await this.integrations.weaviate_query(className, query, limit);
+  }
+
+  // ==================== E2B - CODE INTERPRETER ====================
+
+  async e2b_createSandbox(): Promise<any> {
+    return await this.integrations.e2b_createSandbox();
+  }
+
+  async e2b_executeCode(sandboxId: string, code: string, language?: string): Promise<any> {
+    return await this.integrations.e2b_executeCode(sandboxId, code, language);
+  }
+
+  async e2b_deleteSandbox(sandboxId: string): Promise<any> {
+    return await this.integrations.e2b_deleteSandbox(sandboxId);
+  }
+
+  // ==================== PUPPETEER VIA BROWSERLESS ====================
+
+  async puppeteer_screenshot(url: string, fullPage?: boolean): Promise<any> {
+    return await this.integrations.puppeteer_screenshot(url, fullPage);
+  }
+
+  async puppeteer_scrape(url: string, selector?: string): Promise<any> {
+    return await this.integrations.puppeteer_scrape(url, selector);
+  }
+
+  // ==================== PLAYWRIGHT VIA BROWSERBASE ====================
+
+  async playwright_navigate(sessionId: string, url: string): Promise<any> {
+    return await this.integrations.playwright_navigate(sessionId, url);
+  }
+
+  // ==================== EVERYTHING MCP ====================
+
+  async everything_think(query: string): Promise<any> {
+    return await this.integrations.everything_think(query);
+  }
+
+  // ==================== SEQUENTIAL THINKING ====================
+
+  async sequential_thinking_analyze(problem: string): Promise<any> {
+    return await this.integrations.sequential_thinking_analyze(problem);
+  }
+
+  // ==================== CLOUDFLARE VECTORIZE ====================
+
+  async vectorize_insert(vectors: any[]): Promise<any> {
+    return await this.integrations.vectorize_insert(vectors);
+  }
+
+  async vectorize_query(vector: number[], topK?: number): Promise<any> {
+    return await this.integrations.vectorize_query(vector, topK);
+  }
+
+  // ==================== CLOUDFLARE D1 ====================
+
+  async d1_query(sql: string, params?: any[]): Promise<any> {
+    return await this.integrations.d1_query(sql, params);
+  }
+
+  async d1_execute(sql: string, params?: any[]): Promise<any> {
+    return await this.integrations.d1_execute(sql, params);
+  }
+
+  // ==================== WEBHOOK INTEGRATIONS ====================
+
+  async webhook_send(url: string, payload: any, method?: string): Promise<any> {
+    return await this.integrations.webhook_send(url, payload, method);
+  }
+
+  // ==================== CLOUDINARY ====================
+
+  async cloudinary_uploadImage(imageUrl: string): Promise<any> {
+    return await this.integrations.cloudinary_uploadImage(imageUrl);
+  }
+
+  // ==================== TWILIO ====================
+
+  async twilio_sendSMS(to: string, body: string): Promise<any> {
+    return await this.integrations.twilio_sendSMS(to, body);
+  }
+
+  // ==================== FIGMA ====================
+
+  async figma_getFile(fileKey: string): Promise<any> {
+    return await this.integrations.figma_getFile(fileKey);
+  }
+
+  // ==================== VERCEL ====================
+
+  async vercel_listDeployments(projectId: string): Promise<any> {
+    return await this.integrations.vercel_listDeployments(projectId);
+  }
+
+  async vercel_createDeployment(projectId: string, gitSource: any): Promise<any> {
+    return await this.integrations.vercel_createDeployment(projectId, gitSource);
+  }
+
+  // ==================== ANTHROPIC PROMPT CACHING ====================
+
+  async anthropic_promptCache_message(messages: any[]): Promise<any> {
+    return await this.integrations.anthropic_promptCache_message(messages);
+  }
+
+  // ==================== OFFICIAL MCP SERVERS ====================
+
+  async fetch_url(url: string): Promise<any> {
+    return await this.integrations.fetch_url(url);
+  }
+
+  async time_getCurrentTime(): Promise<any> {
+    return await this.integrations.time_getCurrentTime();
+  }
+
+  async git_listCommits(owner: string, repo: string): Promise<any> {
+    return await this.integrations.git_listCommits(owner, repo);
   }
 }
