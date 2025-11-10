@@ -61,6 +61,9 @@ export interface Env {
   POSTGRES_PASSWORD?: string;
   MYSQL_CONNECTION_STRING?: string;
   MONGODB_URI?: string;
+  MONGODB_API_KEY?: string;
+  MONGODB_APP_ID?: string;
+  MONGODB_DATA_SOURCE?: string;
   REDIS_URL?: string;
   REDIS_HOST?: string;
   REDIS_PORT?: string;
@@ -89,6 +92,7 @@ export interface Env {
   KUBERNETES_TOKEN?: string;
   DOCKER_HOST?: string;
   DOCKER_CERT_PATH?: string;
+  DOCKER_API_TOKEN?: string;
 
   // VCS & DevOps MCP
   GITLAB_TOKEN?: string;

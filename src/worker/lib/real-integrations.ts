@@ -796,27 +796,87 @@ export class RealAwesomeIntegrations {
 
   // ==================== AWS BEDROCK - REAL API ====================
 
-  async aws_invokeModel(modelId: string, prompt: string): Promise<any> {
+  async aws_bedrock_invoke(modelId: string, prompt: string): Promise<any> {
     if (!this.env.AWS_ACCESS_KEY_ID || !this.env.AWS_SECRET_ACCESS_KEY || !this.env.AWS_REGION) {
       throw new Error('AWS credentials not configured');
     }
 
-    // Note: AWS Bedrock requires AWS SigV4 signing
-    // This is simplified - full implementation needs AWS SDK or manual signing
-    throw new Error('AWS Bedrock requires SigV4 signing. Use Cloudflare AI Gateway instead.');
+    const url = `https://bedrock-runtime.${this.env.AWS_REGION}.amazonaws.com/model/${modelId}/invoke`;
+    const payloadStr = JSON.stringify({ prompt });
+    const headers = await this.awsSignV4('POST', url, 'bedrock', this.env.AWS_REGION, payloadStr);
+    headers.set('Content-Type', 'application/json');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: payloadStr
+    });
+
+    if (!response.ok) {
+      throw new Error(`AWS Bedrock API error: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   // ==================== MONGODB ATLAS - REAL DATA API ====================
 
-  async mongodb_findDocuments(cluster: string, database: string, collection: string, filter: any): Promise<any> {
-    if (!this.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI not configured');
+  async mongodb_findDocuments(database: string, collection: string, filter: any): Promise<any> {
+    if (!this.env.MONGODB_URI || !this.env.MONGODB_API_KEY || !this.env.MONGODB_APP_ID) {
+      throw new Error('MongoDB Atlas credentials not configured (need MONGODB_URI, MONGODB_API_KEY, MONGODB_APP_ID)');
     }
 
-    // MongoDB Atlas Data API
-    const apiUrl = this.env.MONGODB_URI.replace('mongodb+srv://', 'https://data.mongodb-api.com/app/data-');
+    const response = await fetch(
+      `https://data.mongodb-api.com/app/${this.env.MONGODB_APP_ID}/endpoint/data/v1/action/find`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': this.env.MONGODB_API_KEY
+        },
+        body: JSON.stringify({
+          dataSource: this.env.MONGODB_DATA_SOURCE || 'Cluster0',
+          database,
+          collection,
+          filter
+        })
+      }
+    );
 
-    throw new Error('MongoDB Atlas Data API requires app ID configuration. Use HTTP Data API endpoint.');
+    if (!response.ok) {
+      throw new Error(`MongoDB Atlas API error: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  async mongodb_insertDocument(database: string, collection: string, document: any): Promise<any> {
+    if (!this.env.MONGODB_URI || !this.env.MONGODB_API_KEY || !this.env.MONGODB_APP_ID) {
+      throw new Error('MongoDB Atlas credentials not configured');
+    }
+
+    const response = await fetch(
+      `https://data.mongodb-api.com/app/${this.env.MONGODB_APP_ID}/endpoint/data/v1/action/insertOne`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': this.env.MONGODB_API_KEY
+        },
+        body: JSON.stringify({
+          dataSource: this.env.MONGODB_DATA_SOURCE || 'Cluster0',
+          database,
+          collection,
+          document
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`MongoDB Atlas API error: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   // ==================== REDIS - UPSTASH REST API ====================
@@ -1006,23 +1066,174 @@ export class RealAwesomeIntegrations {
     return list.objects.map(obj => obj.key);
   }
 
-  // ==================== AWS - REST API ====================
+  // ==================== AWS - REST API WITH SIGV4 ====================
+
+  private async awsSignV4(
+    method: string,
+    url: string,
+    service: string,
+    region: string,
+    payload: string = ''
+  ): Promise<Headers> {
+    const accessKey = this.env.AWS_ACCESS_KEY_ID!;
+    const secretKey = this.env.AWS_SECRET_ACCESS_KEY!;
+
+    const now = new Date();
+    const dateStamp = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
+
+    const parsedUrl = new URL(url);
+    const host = parsedUrl.host;
+    const canonicalUri = parsedUrl.pathname;
+    const canonicalQuerystring = parsedUrl.search.slice(1);
+
+    // Create canonical headers
+    const canonicalHeaders = `host:${host}\nx-amz-date:${amzDate}\n`;
+    const signedHeaders = 'host;x-amz-date';
+
+    // Hash payload
+    const payloadHash = await this.sha256(payload);
+
+    // Create canonical request
+    const canonicalRequest = [
+      method,
+      canonicalUri,
+      canonicalQuerystring,
+      canonicalHeaders,
+      signedHeaders,
+      payloadHash
+    ].join('\n');
+
+    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+    const canonicalRequestHash = await this.sha256(canonicalRequest);
+
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
+      canonicalRequestHash
+    ].join('\n');
+
+    // Calculate signature
+    const kDate = await this.hmacSha256(`AWS4${secretKey}`, dateStamp);
+    const kRegion = await this.hmacSha256(kDate, region);
+    const kService = await this.hmacSha256(kRegion, service);
+    const kSigning = await this.hmacSha256(kService, 'aws4_request');
+    const signature = await this.hmacSha256Hex(kSigning, stringToSign);
+
+    const authorizationHeader = [
+      `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}`,
+      `SignedHeaders=${signedHeaders}`,
+      `Signature=${signature}`
+    ].join(', ');
+
+    const headers = new Headers();
+    headers.set('Authorization', authorizationHeader);
+    headers.set('x-amz-date', amzDate);
+    headers.set('host', host);
+
+    return headers;
+  }
+
+  private async sha256(message: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  private async hmacSha256(key: string | Uint8Array, message: string): Promise<Uint8Array> {
+    const encoder = new TextEncoder();
+    const keyData = typeof key === 'string' ? encoder.encode(key) : key;
+    const messageData = encoder.encode(message);
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    return new Uint8Array(signature);
+  }
+
+  private async hmacSha256Hex(key: Uint8Array, message: string): Promise<string> {
+    const signature = await this.hmacSha256(key, message);
+    return Array.from(signature)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
 
   async aws_s3_listBuckets(): Promise<any> {
-    if (!this.env.AWS_ACCESS_KEY_ID || !this.env.AWS_SECRET_ACCESS_KEY) {
+    if (!this.env.AWS_ACCESS_KEY_ID || !this.env.AWS_SECRET_ACCESS_KEY || !this.env.AWS_REGION) {
       throw new Error('AWS credentials not configured');
     }
 
-    // Note: AWS requires SigV4 signing. For production, use AWS SDK for Workers or implement SigV4.
-    throw new Error('AWS S3 requires SigV4 signing. Use Cloudflare R2 as S3-compatible alternative.');
+    const url = 'https://s3.amazonaws.com/';
+    const headers = await this.awsSignV4('GET', url, 's3', this.env.AWS_REGION);
+
+    const response = await fetch(url, { method: 'GET', headers });
+
+    if (!response.ok) {
+      throw new Error(`AWS S3 API error: ${response.status}`);
+    }
+
+    return await response.text(); // Returns XML
   }
 
   async aws_lambda_invoke(functionName: string, payload: any): Promise<any> {
-    throw new Error('AWS Lambda requires SigV4 signing. Use Cloudflare Workers instead.');
+    if (!this.env.AWS_ACCESS_KEY_ID || !this.env.AWS_SECRET_ACCESS_KEY || !this.env.AWS_REGION) {
+      throw new Error('AWS credentials not configured');
+    }
+
+    const url = `https://lambda.${this.env.AWS_REGION}.amazonaws.com/2015-03-31/functions/${functionName}/invocations`;
+    const payloadStr = JSON.stringify(payload);
+    const headers = await this.awsSignV4('POST', url, 'lambda', this.env.AWS_REGION, payloadStr);
+    headers.set('Content-Type', 'application/json');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: payloadStr
+    });
+
+    if (!response.ok) {
+      throw new Error(`AWS Lambda API error: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async aws_dynamodb_getItem(tableName: string, key: any): Promise<any> {
-    throw new Error('AWS DynamoDB requires SigV4 signing. Use Cloudflare D1 instead.');
+    if (!this.env.AWS_ACCESS_KEY_ID || !this.env.AWS_SECRET_ACCESS_KEY || !this.env.AWS_REGION) {
+      throw new Error('AWS credentials not configured');
+    }
+
+    const url = `https://dynamodb.${this.env.AWS_REGION}.amazonaws.com/`;
+    const payloadStr = JSON.stringify({
+      TableName: tableName,
+      Key: key
+    });
+
+    const headers = await this.awsSignV4('POST', url, 'dynamodb', this.env.AWS_REGION, payloadStr);
+    headers.set('Content-Type', 'application/x-amz-json-1.0');
+    headers.set('X-Amz-Target', 'DynamoDB_20120810.GetItem');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: payloadStr
+    });
+
+    if (!response.ok) {
+      throw new Error(`AWS DynamoDB API error: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   // ==================== AZURE - REST API ====================
@@ -1079,21 +1290,118 @@ export class RealAwesomeIntegrations {
     return await response.text(); // Returns XML
   }
 
-  // ==================== GCP - REST API ====================
+  // ==================== GCP - REST API WITH JWT ====================
 
-  async gcp_compute_listInstances(projectId: string, zone: string): Promise<any> {
+  private async gcpGetAccessToken(): Promise<string> {
     if (!this.env.GCP_SERVICE_ACCOUNT_KEY) {
       throw new Error('GCP_SERVICE_ACCOUNT_KEY not configured');
     }
 
-    // Get OAuth token
-    const key = JSON.parse(this.env.GCP_SERVICE_ACCOUNT_KEY);
-    // Simplified - production needs proper JWT signing
-    throw new Error('GCP requires JWT signing for service account. Use GCP REST API with proper auth.');
+    const serviceAccount = JSON.parse(this.env.GCP_SERVICE_ACCOUNT_KEY);
+    const now = Math.floor(Date.now() / 1000);
+
+    // Create JWT header
+    const header = {
+      alg: 'RS256',
+      typ: 'JWT',
+      kid: serviceAccount.private_key_id
+    };
+
+    // Create JWT claims
+    const claims = {
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now
+    };
+
+    // Encode header and claims
+    const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const encodedClaims = btoa(JSON.stringify(claims)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const unsignedToken = `${encodedHeader}.${encodedClaims}`;
+
+    // Import private key
+    const privateKey = serviceAccount.private_key.replace(/\\n/g, '\n');
+    const pemKey = privateKey.replace('-----BEGIN PRIVATE KEY-----', '')
+      .replace('-----END PRIVATE KEY-----', '')
+      .replace(/\s/g, '');
+
+    const binaryKey = Uint8Array.from(atob(pemKey), c => c.charCodeAt(0));
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      binaryKey,
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256'
+      },
+      false,
+      ['sign']
+    );
+
+    // Sign the token
+    const encoder = new TextEncoder();
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      cryptoKey,
+      encoder.encode(unsignedToken)
+    );
+
+    const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+
+    const jwt = `${unsignedToken}.${encodedSignature}`;
+
+    // Exchange JWT for access token
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+    });
+
+    if (!response.ok) {
+      throw new Error(`GCP token exchange failed: ${response.status}`);
+    }
+
+    const tokenData = await response.json();
+    return tokenData.access_token;
+  }
+
+  async gcp_compute_listInstances(projectId: string, zone: string): Promise<any> {
+    const accessToken = await this.gcpGetAccessToken();
+
+    const response = await fetch(
+      `https://compute.googleapis.com/compute/v1/projects/${projectId}/zones/${zone}/instances`,
+      {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`GCP Compute API error: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async gcp_storage_listBuckets(projectId: string): Promise<any> {
-    throw new Error('GCP requires OAuth2 JWT signing. Use Cloudflare R2 as alternative.');
+    const accessToken = await this.gcpGetAccessToken();
+
+    const response = await fetch(
+      `https://storage.googleapis.com/storage/v1/b?project=${projectId}`,
+      {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`GCP Storage API error: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   // ==================== EMAIL - SENDGRID/MAILGUN/RESEND ====================
@@ -1800,29 +2108,171 @@ export class RealAwesomeIntegrations {
     };
   }
 
-  // ==================== SERVICES THAT CANNOT WORK IN WORKERS ====================
+  // ==================== DOCKER - REST API ====================
+
+  async docker_listContainers(): Promise<any> {
+    if (!this.env.DOCKER_HOST) {
+      throw new Error('DOCKER_HOST not configured (use HTTP endpoint like http://docker-host:2375)');
+    }
+
+    const response = await fetch(`${this.env.DOCKER_HOST}/containers/json`, {
+      headers: this.env.DOCKER_API_TOKEN ? {
+        'Authorization': `Bearer ${this.env.DOCKER_API_TOKEN}`
+      } : {}
+    });
+
+    if (!response.ok) {
+      throw new Error(`Docker API error: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  async docker_startContainer(id: string): Promise<any> {
+    if (!this.env.DOCKER_HOST) {
+      throw new Error('DOCKER_HOST not configured');
+    }
+
+    const response = await fetch(`${this.env.DOCKER_HOST}/containers/${id}/start`, {
+      method: 'POST',
+      headers: this.env.DOCKER_API_TOKEN ? {
+        'Authorization': `Bearer ${this.env.DOCKER_API_TOKEN}`
+      } : {}
+    });
+
+    if (!response.ok) {
+      throw new Error(`Docker API error: ${response.status}`);
+    }
+
+    return { success: true };
+  }
+
+  async docker_stopContainer(id: string): Promise<any> {
+    if (!this.env.DOCKER_HOST) {
+      throw new Error('DOCKER_HOST not configured');
+    }
+
+    const response = await fetch(`${this.env.DOCKER_HOST}/containers/${id}/stop`, {
+      method: 'POST',
+      headers: this.env.DOCKER_API_TOKEN ? {
+        'Authorization': `Bearer ${this.env.DOCKER_API_TOKEN}`
+      } : {}
+    });
+
+    if (!response.ok) {
+      throw new Error(`Docker API error: ${response.status}`);
+    }
+
+    return { success: true };
+  }
+
+  // ==================== KUBERNETES - REST API ====================
+
+  async kubernetes_getPods(namespace: string = 'default'): Promise<any> {
+    if (!this.env.KUBERNETES_CLUSTER_URL || !this.env.KUBERNETES_TOKEN) {
+      throw new Error('Kubernetes credentials not configured');
+    }
+
+    const response = await fetch(
+      `${this.env.KUBERNETES_CLUSTER_URL}/api/v1/namespaces/${namespace}/pods`,
+      {
+        headers: {
+          'Authorization': `Bearer ${this.env.KUBERNETES_TOKEN}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Kubernetes API error: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  async kubernetes_getLogs(namespace: string, podName: string): Promise<any> {
+    if (!this.env.KUBERNETES_CLUSTER_URL || !this.env.KUBERNETES_TOKEN) {
+      throw new Error('Kubernetes credentials not configured');
+    }
+
+    const response = await fetch(
+      `${this.env.KUBERNETES_CLUSTER_URL}/api/v1/namespaces/${namespace}/pods/${podName}/log`,
+      {
+        headers: {
+          'Authorization': `Bearer ${this.env.KUBERNETES_TOKEN}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Kubernetes API error: ${response.status}`);
+    }
+
+    return await response.text();
+  }
+
+  async kubernetes_createDeployment(namespace: string, name: string, image: string, replicas: number = 1): Promise<any> {
+    if (!this.env.KUBERNETES_CLUSTER_URL || !this.env.KUBERNETES_TOKEN) {
+      throw new Error('Kubernetes credentials not configured');
+    }
+
+    const deployment = {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: { name },
+      spec: {
+        replicas,
+        selector: {
+          matchLabels: { app: name }
+        },
+        template: {
+          metadata: {
+            labels: { app: name }
+          },
+          spec: {
+            containers: [{
+              name,
+              image,
+              ports: [{ containerPort: 80 }]
+            }]
+          }
+        }
+      }
+    };
+
+    const response = await fetch(
+      `${this.env.KUBERNETES_CLUSTER_URL}/apis/apps/v1/namespaces/${namespace}/deployments`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.env.KUBERNETES_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(deployment)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Kubernetes API error: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  // ==================== SERVICES TRULY CANNOT WORK IN WORKERS ====================
 
   async postgres_query(sql: string, params?: any[]): Promise<any> {
-    throw new Error('Direct Postgres not supported in Workers. Use Cloudflare Hyperdrive or D1 instead.');
+    throw new Error('Direct Postgres not supported in Workers (no TCP). Use HTTP alternatives: Neon, Supabase, PlanetScale, Turso, or Cloudflare Hyperdrive.');
   }
 
   async mysql_query(sql: string): Promise<any> {
-    throw new Error('Direct MySQL not supported in Workers. Use Cloudflare D1 instead.');
+    throw new Error('Direct MySQL not supported in Workers (no TCP). Use PlanetScale HTTP API or Cloudflare D1.');
   }
 
   async mongodb_find(collection: string, query: any): Promise<any> {
-    throw new Error('Direct MongoDB not supported in Workers. Use HTTP API or Atlas Data API.');
+    throw new Error('Direct MongoDB not supported in Workers (no TCP). Use mongodb_findDocuments() with Atlas Data API.');
   }
 
   async ssh_connect(host: string): Promise<any> {
-    throw new Error('SSH not supported in Workers. No TCP sockets available.');
-  }
-
-  async docker_listContainers(): Promise<any> {
-    throw new Error('Docker not supported in Workers. Use Cloudflare Container Registry API or external Docker API.');
-  }
-
-  async kubernetes_getPods(namespace: string): Promise<any> {
-    throw new Error('Direct K8s not supported. Use Kubernetes REST API with fetch() instead.');
+    throw new Error('SSH not supported in Workers (no TCP sockets). Use Cloudflare Zero Trust SSH or external proxy.');
   }
 }

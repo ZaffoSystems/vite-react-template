@@ -687,7 +687,11 @@ export class AwesomeMCPManager {
   }
 
   async k8s_getLogs(pod: string, namespace?: string): Promise<any> {
-    throw new Error('Use Kubernetes REST API with fetch() for logs');
+    return await this.integrations.kubernetes_getLogs(namespace || 'default', pod);
+  }
+
+  async k8s_createDeployment(namespace: string, name: string, image: string, replicas?: number): Promise<any> {
+    return await this.integrations.kubernetes_createDeployment(namespace, name, image, replicas);
   }
 
   async docker_listContainers(): Promise<any> {
@@ -695,7 +699,11 @@ export class AwesomeMCPManager {
   }
 
   async docker_startContainer(id: string): Promise<any> {
-    throw new Error('Use Docker REST API with fetch() for container management');
+    return await this.integrations.docker_startContainer(id);
+  }
+
+  async docker_stopContainer(id: string): Promise<any> {
+    return await this.integrations.docker_stopContainer(id);
   }
 
   async memory_store(key: string, value: any, metadata?: any): Promise<any> {
@@ -712,6 +720,16 @@ export class AwesomeMCPManager {
 
   async memory_list(prefix?: string): Promise<any> {
     return await this.integrations.memory_list(prefix);
+  }
+
+  // ==================== MONGODB ATLAS - DATA API ====================
+
+  async mongodb_findDocuments(database: string, collection: string, filter: any): Promise<any> {
+    return await this.integrations.mongodb_findDocuments(database, collection, filter);
+  }
+
+  async mongodb_insertDocument(database: string, collection: string, document: any): Promise<any> {
+    return await this.integrations.mongodb_insertDocument(database, collection, document);
   }
 
   // ==================== GITLAB - REAL API ====================
@@ -840,6 +858,10 @@ export class AwesomeMCPManager {
 
   async aws_dynamodb_getItem(tableName: string, key: any): Promise<any> {
     return await this.integrations.aws_dynamodb_getItem(tableName, key);
+  }
+
+  async aws_bedrock_invoke(modelId: string, prompt: string): Promise<any> {
+    return await this.integrations.aws_bedrock_invoke(modelId, prompt);
   }
 
   // ==================== AZURE - REST API ====================
