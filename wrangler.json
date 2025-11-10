@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "vite-react-template",
+  "name": "mas-control-agent",
   "main": "./src/worker/index.ts",
   "compatibility_date": "2025-10-08",
   "compatibility_flags": ["nodejs_compat"],
@@ -11,5 +11,62 @@
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mas-control-db",
+      "database_id": "placeholder"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "placeholder"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "mas-storage"
+    }
+  ],
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "mas-rag-index"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "TASK_QUEUE",
+        "queue": "mas-task-queue"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "mas-task-queue",
+        "max_batch_size": 10,
+        "max_batch_timeout": 30
+      }
+    ]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AGENT_STATE",
+        "class_name": "AgentState",
+        "script_name": "mas-control-agent"
+      },
+      {
+        "name": "SSH_SESSION",
+        "class_name": "SSHSession",
+        "script_name": "mas-control-agent"
+      }
+    ]
+  },
+  "ai": {
+    "binding": "AI"
   }
 }
