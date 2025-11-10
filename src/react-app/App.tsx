@@ -1,65 +1,68 @@
-// src/App.tsx
-
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import cloudflareLogo from "./assets/Cloudflare_Logo.svg";
-import honoLogo from "./assets/hono.svg";
-import "./App.css";
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import { MessageSquare, Bot, CheckSquare, Server, Database, Cloud } from 'lucide-react';
+import ChatInterface from './components/ChatInterface';
+import AgentManagement from './components/AgentManagement';
+import TaskMonitor from './components/TaskMonitor';
+import InfrastructureControl from './components/InfrastructureControl';
+import MCPServers from './components/MCPServers';
+import Dashboard from './components/Dashboard';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0);
-  const [name, setName] = useState("unknown");
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-        <a href="https://hono.dev/" target="_blank">
-          <img src={honoLogo} className="logo cloudflare" alt="Hono logo" />
-        </a>
-        <a href="https://workers.cloudflare.com/" target="_blank">
-          <img
-            src={cloudflareLogo}
-            className="logo cloudflare"
-            alt="Cloudflare logo"
-          />
-        </a>
+    <Router>
+      <div className="app-container">
+        <nav className="sidebar">
+          <div className="logo">
+            <Cloud className="logo-icon" />
+            <h1>MAS Control</h1>
+          </div>
+
+          <div className="nav-links">
+            <NavLink to="/" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Server />
+              <span>Dashboard</span>
+            </NavLink>
+
+            <NavLink to="/chat" className={({ isActive }) => isActive ? 'active' : ''}>
+              <MessageSquare />
+              <span>Chat</span>
+            </NavLink>
+
+            <NavLink to="/agents" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Bot />
+              <span>Agents</span>
+            </NavLink>
+
+            <NavLink to="/tasks" className={({ isActive }) => isActive ? 'active' : ''}>
+              <CheckSquare />
+              <span>Tasks</span>
+            </NavLink>
+
+            <NavLink to="/infrastructure" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Database />
+              <span>Infrastructure</span>
+            </NavLink>
+
+            <NavLink to="/mcp" className={({ isActive }) => isActive ? 'active' : ''}>
+              <Server />
+              <span>MCP Servers</span>
+            </NavLink>
+          </div>
+        </nav>
+
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/chat" element={<ChatInterface />} />
+            <Route path="/agents" element={<AgentManagement />} />
+            <Route path="/tasks" element={<TaskMonitor />} />
+            <Route path="/infrastructure" element={<InfrastructureControl />} />
+            <Route path="/mcp" element={<MCPServers />} />
+          </Routes>
+        </main>
       </div>
-      <h1>Vite + React + Hono + Cloudflare</h1>
-      <div className="card">
-        <button
-          onClick={() => setCount((count) => count + 1)}
-          aria-label="increment"
-        >
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <div className="card">
-        <button
-          onClick={() => {
-            fetch("/api/")
-              .then((res) => res.json() as Promise<{ name: string }>)
-              .then((data) => setName(data.name));
-          }}
-          aria-label="get name"
-        >
-          Name from API is: {name}
-        </button>
-        <p>
-          Edit <code>worker/index.ts</code> to change the name
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the logos to learn more</p>
-    </>
+    </Router>
   );
 }
 
