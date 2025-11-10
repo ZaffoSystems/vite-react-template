@@ -53,10 +53,14 @@ ${request.requirements?.map(r => `- ${r}`).join('\n') || ''}`;
       { role: 'user', content: `Generate the Cloudflare Worker code for: ${request.description}` },
     ];
 
-    const response = await this.ai.runWithBinding(
-      '@cf/meta/llama-3.1-8b-instruct',
+    // Use CF AI Gateway with compat endpoint and dynamic routing
+    const response = await this.ai.compatChatCompletion(
       messages,
-      { temperature: 0.2, maxTokens: 4096 }
+      {
+        model: 'dynamic/RE_Ant', // Your dynamic route
+        temperature: 0.2,
+        maxTokens: 4096
+      }
     );
 
     if (!response.success) {
@@ -121,10 +125,14 @@ Generate production-ready TypeScript code.`;
       { role: 'user', content: `Create sub-agent worker for: ${request.purpose}` },
     ];
 
-    const response = await this.ai.runWithBinding(
-      '@cf/meta/llama-3.1-8b-instruct',
+    // Use CF AI Gateway with compat endpoint and dynamic routing
+    const response = await this.ai.compatChatCompletion(
       messages,
-      { temperature: 0.3, maxTokens: 4096 }
+      {
+        model: 'dynamic/RE_Ant', // Your dynamic route
+        temperature: 0.3,
+        maxTokens: 4096
+      }
     );
 
     if (!response.success) {
@@ -279,10 +287,14 @@ Generate ONLY the complete HTML code.`;
       { role: 'user', content: `Generate web interface for: ${request.description}` },
     ];
 
-    const response = await this.ai.runWithBinding(
-      '@cf/meta/llama-3.1-8b-instruct',
+    // Use CF AI Gateway with compat endpoint and dynamic routing
+    const response = await this.ai.compatChatCompletion(
       messages,
-      { temperature: 0.3, maxTokens: 4096 }
+      {
+        model: 'dynamic/RE_Ant', // Your dynamic route
+        temperature: 0.3,
+        maxTokens: 4096
+      }
     );
 
     if (!response.success) {

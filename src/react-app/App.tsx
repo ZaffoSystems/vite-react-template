@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { MessageSquare, Bot, CheckSquare, Server, Database, Cloud } from 'lucide-react';
+import { MessageSquare, Bot, CheckSquare, Server, Database, Cloud, Settings as SettingsIcon } from 'lucide-react';
 import ChatInterface from './components/ChatInterface';
 import AgentManagement from './components/AgentManagement';
 import TaskMonitor from './components/TaskMonitor';
 import InfrastructureControl from './components/InfrastructureControl';
 import MCPServers from './components/MCPServers';
 import Dashboard from './components/Dashboard';
+import Settings from './components/Settings';
 import './App.css';
 
 function App() {
@@ -48,6 +49,11 @@ function App() {
               <Server />
               <span>MCP Servers</span>
             </NavLink>
+
+            <NavLink to="/settings" className={({ isActive }) => isActive ? 'active' : ''}>
+              <SettingsIcon />
+              <span>Settings</span>
+            </NavLink>
           </div>
         </nav>
 
@@ -59,6 +65,7 @@ function App() {
             <Route path="/tasks" element={<TaskMonitor />} />
             <Route path="/infrastructure" element={<InfrastructureControl />} />
             <Route path="/mcp" element={<MCPServers />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
       </div>

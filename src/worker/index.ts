@@ -12,6 +12,7 @@ import { AgentState } from './durable-objects/agent-state';
 import { SSHSession } from './durable-objects/ssh-session';
 import mcpCF from './routes/mcp-cf';
 import mcpAwesome from './routes/mcp-awesome';
+import settings from './routes/settings';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -22,6 +23,9 @@ app.route('/api/mcp-cf', mcpCF);
 
 // Mount Awesome MCP routes
 app.route('/api/mcp-awesome', mcpAwesome);
+
+// Mount Settings routes
+app.route('/api/settings', settings);
 
 // Health check
 app.get('/health', (c) => {

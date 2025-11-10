@@ -248,7 +248,84 @@ export class AIGatewayClient {
   }
 
   /**
-   * Use OpenAI-compatible endpoint through AI Gateway
+   * Use Compat endpoint with dynamic routing - MATCHES YOUR ACTUAL CF AI GATEWAY SETUP
+   * Endpoint: /compat/chat/completions
+   * Model format: dynamic/ROUTE_NAME
+   *
+   * This is the CORRECT method matching your curl command:
+   * curl https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/compat/chat/completions \
+   *   --header 'cf-aig-authorization: Bearer {token}' \
+   *   --data '{"model": "dynamic/RE_Ant", "messages": [...]}'
+   */
+  async compatChatCompletion(
+    messages: Message[],
+    options?: {
+      model?: string; // Use "dynamic/ROUTE_NAME" for dynamic routing, or specific model
+      temperature?: number;
+      maxTokens?: number;
+      stream?: boolean;
+      metadata?: Record<string, any>;
+    }
+  ): Promise<AIGatewayResponse> {
+    // Use /compat endpoint - this is OpenAI-compatible with CF AI Gateway features
+    const url = `${this.baseUrl}/v1/${this.accountId}/${this.gatewayId}/compat/chat/completions`;
+
+    const payload = {
+      model: options?.model || 'dynamic/default', // Support dynamic routing
+      messages,
+      temperature: options?.temperature ?? 0.7,
+      max_tokens: options?.maxTokens ?? 2048,
+      stream: options?.stream ?? false,
+    };
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'cf-aig-authorization': `Bearer ${this.token}`, // Correct header name
+    };
+
+    if (options?.metadata) {
+      headers['cf-aig-metadata'] = JSON.stringify(options.metadata);
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          success: false,
+          error: `Chat completion failed: ${response.status} - ${errorText}`,
+        };
+      }
+
+      const data = await response.json();
+      const logId = response.headers.get('cf-aig-log-id');
+
+      // Extract response based on OpenAI format
+      const content = data.choices?.[0]?.message?.content || data.response || data;
+
+      return {
+        success: true,
+        result: { response: content, raw: data },
+        logId: logId || undefined,
+        model: data.model || options?.model,
+        usage: data.usage,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Use OpenAI-compatible endpoint through AI Gateway (legacy method)
+   * Note: For your setup, use compatChatCompletion() instead
    */
   async chatCompletion(
     messages: Message[],

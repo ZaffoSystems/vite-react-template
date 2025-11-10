@@ -116,10 +116,14 @@ Be creative and thorough. Generate detailed plans for complex requests.`;
       { role: 'user', content: `Plan execution for: ${command}` },
     ];
 
-    const response = await this.ai.runWithBinding(
-      '@cf/meta/llama-3.1-8b-instruct',
+    // Use CF AI Gateway with compat endpoint and dynamic routing
+    const response = await this.ai.compatChatCompletion(
       messages,
-      { temperature: 0.3, maxTokens: 2048 }
+      {
+        model: 'dynamic/RE_Ant', // Your dynamic route
+        temperature: 0.3,
+        maxTokens: 2048
+      }
     );
 
     if (!response.success) {
@@ -286,9 +290,10 @@ Be creative and thorough. Generate detailed plans for complex requests.`;
           { role: 'user', content: JSON.stringify(params) },
         ];
 
-        const analysisResponse = await this.ai.runWithBinding(
-          '@cf/meta/llama-3.1-8b-instruct',
-          analysisMessages
+        // Use CF AI Gateway with compat endpoint and dynamic routing
+        const analysisResponse = await this.ai.compatChatCompletion(
+          analysisMessages,
+          { model: 'dynamic/RE_Ant' }
         );
 
         return { analysis: analysisResponse.result?.response };
@@ -335,9 +340,10 @@ Be creative and thorough. Generate detailed plans for complex requests.`;
       },
     ];
 
-    const response = await this.ai.runWithBinding(
-      '@cf/meta/llama-3.1-8b-instruct-fast',
-      messages
+    // Use CF AI Gateway with compat endpoint and dynamic routing
+    const response = await this.ai.compatChatCompletion(
+      messages,
+      { model: 'dynamic/RE_Ant' }
     );
 
     return {
@@ -361,10 +367,13 @@ Be creative and thorough. Generate detailed plans for complex requests.`;
       },
     ];
 
-    const response = await this.ai.runWithBinding(
-      '@cf/meta/llama-3.1-8b-instruct',
+    // Use CF AI Gateway with compat endpoint and dynamic routing
+    const response = await this.ai.compatChatCompletion(
       messages,
-      { temperature: 0.4 }
+      {
+        model: 'dynamic/RE_Ant',
+        temperature: 0.4
+      }
     );
 
     try {
@@ -681,9 +690,10 @@ export default {
       { role: 'user', content: command },
     ];
 
-    const response = await this.ai.runWithBinding(
-      '@cf/meta/llama-3.1-8b-instruct-fast',
-      messages
+    // Use CF AI Gateway with compat endpoint and dynamic routing
+    const response = await this.ai.compatChatCompletion(
+      messages,
+      { model: 'dynamic/RE_Ant' }
     );
 
     return {

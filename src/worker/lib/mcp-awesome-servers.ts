@@ -348,27 +348,8 @@ export const AWESOME_MCP_SERVERS: MCPServerDefinition[] = [
     envVars: ['JIRA_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN'],
   },
 
-  // AI & ML
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    category: 'ai',
-    npmPackage: 'mcp-server-openai',
-    description: 'OpenAI API integration',
-    capabilities: ['chat_completion', 'embeddings', 'image_generation', 'tts'],
-    requiresAuth: true,
-    envVars: ['OPENAI_API_KEY'],
-  },
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    category: 'ai',
-    npmPackage: 'mcp-server-anthropic',
-    description: 'Anthropic Claude API integration',
-    capabilities: ['chat', 'streaming', 'vision'],
-    requiresAuth: true,
-    envVars: ['ANTHROPIC_API_KEY'],
-  },
+  // NOTE: OpenAI and Anthropic are NOT included - this system uses ONLY Cloudflare AI Gateway
+  // All AI operations go through CF AI Gateway with authenticated headers and dynamic routing
 
   // Analytics & Monitoring
   {
