@@ -1,5 +1,5 @@
 // src/react-app/CredentialManager.tsx
-import React, { useState } from "react";
+import { useState, FormEvent } from "react";
 
 interface CredentialManagerProps {
   onCredentialAdded?: () => void;
@@ -11,7 +11,7 @@ export default function CredentialManager({ onCredentialAdded }: CredentialManag
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setStatus("");
     if (!label || !value) {
