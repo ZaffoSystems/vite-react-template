@@ -8,6 +8,9 @@ export interface Env {
   COORDINATOR_AGENT: DurableObjectNamespace;
   MEMORY_AGENT: DurableObjectNamespace;
   RESEARCH_AGENT: DurableObjectNamespace;
+  SUPERVISOR_AGENT: DurableObjectNamespace;
+  DOCKER_AGENT: DurableObjectNamespace;
+  INFRASTRUCTURE_AGENT: DurableObjectNamespace;
 
   // AI & Storage
   AI: Ai;
@@ -41,12 +44,31 @@ export interface Env {
   MCP_BRAVE_SEARCH: McpServer;
   MCP_SEQUENTIAL_THINKING: McpServer;
   MCP_FILESYSTEM: McpServer;
+  MCP_DOCKER: McpServer;
+  MCP_SSH: McpServer;
 
-  // Environment variables
+  // AI Gateway Configuration
+  AI_GATEWAY_ACCOUNT_ID: string;
+  AI_GATEWAY_ID: string;
+  AI_GATEWAY_TOKEN: string;  // Set via secret
+  AI_GATEWAY_DEFAULT_ROUTE: string;
+
+  // System Configuration
   ENVIRONMENT: string;
   ENABLE_MEMORY: string;
   ENABLE_SEQUENTIAL_THINKING: string;
+  ENABLE_AUTONOMOUS_MODE: string;
   MAX_CONCURRENT_AGENTS: string;
+  AUTO_SCALING_ENABLED: string;
+  AUTO_REMEDIATION_ENABLED: string;
+
+  // Security Settings
+  ENABLE_RATE_LIMITING: string;
+  ENABLE_INPUT_VALIDATION: string;
+  ENABLE_OUTPUT_FILTERING: string;
+  ENABLE_AUDIT_LOGGING: string;
+  MAX_REQUESTS_PER_MINUTE: string;
+  MAX_TOKENS_PER_REQUEST: string;
 
   // API Keys (set via secrets)
   E2B_API_KEY?: string;
@@ -165,4 +187,15 @@ export interface MemoryEntry {
   accessCount: number;
   lastAccessed?: string;
   expiresAt?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  userId?: string;
+  agentId?: string;
+  action: string;
+  resource: string;
+  allowed: boolean;
+  reason?: string;
+  timestamp: string;
 }
