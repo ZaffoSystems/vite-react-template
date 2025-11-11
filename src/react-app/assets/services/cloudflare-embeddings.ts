@@ -1,6 +1,6 @@
 /**
  * Cloudflare AI Embeddings Service
- * Uses Cloudflare Workers AI for generating embeddings (NO OpenAI)
+ * Uses Cloudflare Workers AI for generating embeddings
  */
 
 export interface EmbeddingResult {

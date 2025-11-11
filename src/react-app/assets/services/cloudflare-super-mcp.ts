@@ -44,7 +44,7 @@ export interface HybridSearchResult {
 }
 
 export interface AIGatewayRoute {
-  provider: 'openai' | 'anthropic' | 'google' | 'aws' | 'cloudflare';
+  provider: 'anthropic' | 'google' | 'aws' | 'cloudflare';
   model: string;
   apiKey?: string;
   fallback?: AIGatewayRoute;
@@ -410,7 +410,7 @@ export class CloudflareSuperMCP {
     } = {}
   ): Promise<{ response: any; provider: string; cost: number }> {
     const gatewayUrl = process.env.CF_GATEWAY_URL || '';
-    const providers = options.fallbackChain || ['openai', 'anthropic', 'google', 'cloudflare'];
+    const providers = options.fallbackChain || ['anthropic', 'google', 'cloudflare'];
 
     let lastError: Error | null = null;
 
@@ -447,10 +447,6 @@ export class CloudflareSuperMCP {
     let requestBody: any = { messages };
 
     switch (provider) {
-      case 'openai':
-        endpoint = `${gatewayUrl}/openai/chat/completions`;
-        requestBody.model = model || 'gpt-4';
-        break;
       case 'anthropic':
         endpoint = `${gatewayUrl}/anthropic/messages`;
         requestBody.model = model || 'claude-3-5-sonnet-20241022';
@@ -490,7 +486,6 @@ export class CloudflareSuperMCP {
   private calculateCost(provider: string, response: any): number {
     // Simplified cost calculation - would use actual token counts
     const costs: Record<string, number> = {
-      openai: 0.002,
       anthropic: 0.003,
       google: 0.0015,
       cloudflare: 0.0001

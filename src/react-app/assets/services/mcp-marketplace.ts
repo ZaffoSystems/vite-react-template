@@ -153,22 +153,6 @@ export class MCPMarketplaceService {
     });
 
     // Add some default services
-    this.services.set('openai-gateway', {
-      id: 'openai-gateway',
-      name: 'OpenAI Gateway',
-      description: 'Gateway for OpenAI services with intelligent routing',
-      provider: 'OpenAI',
-      category: 'ai',
-      tags: ['ai', 'llm', 'gpt', 'openai'],
-      integrationType: 'api',
-      documentationUrl: 'https://platform.openai.com/docs',
-      status: 'active',
-      rating: 4.7,
-      usageCount: 25000,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-
     this.services.set('anthropic-claude', {
       id: 'anthropic-claude',
       name: 'Anthropic Claude',
