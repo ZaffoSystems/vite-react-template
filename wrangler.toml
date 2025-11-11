@@ -12,7 +12,7 @@ enabled = true
 head_sampling_rate = 1
 
 # ===================================================================
-# DURABLE OBJECTS - Enhanced Agent System
+# DURABLE OBJECTS - Complete Agent System (10 Agents)
 # ===================================================================
 
 [[durable_objects.bindings]]
@@ -45,9 +45,35 @@ name = "RESEARCH_AGENT"
 class_name = "ResearchAgent"
 script_name = "ultra-multi-agent-system"
 
+# AUTONOMOUS SYSTEM AGENTS
+[[durable_objects.bindings]]
+name = "SUPERVISOR_AGENT"
+class_name = "SupervisorAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "DOCKER_AGENT"
+class_name = "DockerAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "INFRASTRUCTURE_AGENT"
+class_name = "InfrastructureAgent"
+script_name = "ultra-multi-agent-system"
+
 [[migrations]]
-tag = "v1"
-new_sqlite_classes = ["MetaAgent", "BuilderAgent", "ExecutorAgent", "CoordinatorAgent", "MemoryAgent", "ResearchAgent"]
+tag = "v2"
+new_sqlite_classes = [
+  "MetaAgent", 
+  "BuilderAgent", 
+  "ExecutorAgent", 
+  "CoordinatorAgent", 
+  "MemoryAgent", 
+  "ResearchAgent",
+  "SupervisorAgent",
+  "DockerAgent",
+  "InfrastructureAgent"
+]
 
 # ===================================================================
 # STORAGE & AI BINDINGS
@@ -202,16 +228,64 @@ server_url = "npx:@modelcontextprotocol/server-filesystem"
 name = "filesystem"
 
 # ===================================================================
-# ENVIRONMENT VARIABLES
+# INFRASTRUCTURE MANAGEMENT - Docker & SSH
+# ===================================================================
+
+# Docker - Container management
+[[mcp]]
+binding = "MCP_DOCKER"
+server_url = "npx:@ckreiling/mcp-server-docker"
+name = "docker"
+env = { DOCKER_HOST = "unix:///var/run/docker.sock" }
+
+# SSH - Remote host management
+[[mcp]]
+binding = "MCP_SSH"
+server_url = "npx:@zibdie/ssh-mcp-server"
+name = "ssh"
+env = { 
+  SSH_HOST = "",  # Set via secrets or env vars
+  SSH_USER = "",
+  SSH_TIMEOUT = "60000",
+  SSH_MAX_CHARS = "10000"
+}
+
+# Kubernetes (Optional - for container orchestration)
+# [[mcp]]
+# binding = "MCP_KUBERNETES"
+# server_url = "npx:@kubernetes/mcp-server"
+# name = "kubernetes"
+
+# ===================================================================
+# AUTONOMOUS SYSTEM CONFIGURATION
 # ===================================================================
 
 [vars]
 ENVIRONMENT = "development"
 ENABLE_MEMORY = "true"
 ENABLE_SEQUENTIAL_THINKING = "true"
+ENABLE_AUTONOMOUS_MODE = "true"
 MAX_CONCURRENT_AGENTS = "10"
+AUTO_SCALING_ENABLED = "true"
+AUTO_REMEDIATION_ENABLED = "true"
 
-# Production environment
+# ===================================================================
+# CRON TRIGGERS - Autonomous Operations
+# ===================================================================
+
+# Run autonomous supervision every minute
+[triggers]
+crons = ["*/1 * * * *"]
+
+# ===================================================================
+# PRODUCTION ENVIRONMENT
+# ===================================================================
+
 [env.production]
 name = "ultra-multi-agent-system-prod"
-vars = { ENVIRONMENT = "production", MAX_CONCURRENT_AGENTS = "50" }
+vars = { 
+  ENVIRONMENT = "production", 
+  MAX_CONCURRENT_AGENTS = "50",
+  AUTO_SCALING_ENABLED = "true",
+  AUTO_REMEDIATION_ENABLED = "true"
+}
