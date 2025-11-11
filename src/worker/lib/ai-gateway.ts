@@ -60,15 +60,69 @@ export class AIGatewayClient {
   }
 
   /**
+   * Run inference with dynamic/RE_Ant model via AI Gateway
+   * This is the simplest way to use CF AI Gateway dynamic routing
+   * Format: POST /v1/{account_id}/{gateway_id}/compat/chat/completions
+   */
+  async run(
+    model: string,
+    messages: Message[],
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+    } = {}
+  ): Promise<AIGatewayResponse> {
+    const url = `${this.baseUrl}/v1/${this.accountId}/${this.gatewayId}/compat/chat/completions`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'cf-aig-authorization': `Bearer ${this.token}`,
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model, // e.g., "dynamic/RE_Ant"
+          messages,
+          temperature: options.temperature ?? 0.7,
+          max_tokens: options.maxTokens ?? 2048,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`AI Gateway request failed (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      return {
+        success: true,
+        result: data,
+        model,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'AI Gateway request failed',
+      };
+    }
+  }
+
+  /**
    * Run inference with Dynamic Routing
    * Uses authenticated headers and dynamic route selection
+   * Format matches CF AI Gateway compat/chat/completions endpoint
    */
   async runWithDynamicRoute(
     routeConfig: DynamicRouteConfig,
     messages: Message[],
     metadata?: Record<string, any>
   ): Promise<AIGatewayResponse> {
-    const url = `${this.baseUrl}/v1/${this.accountId}/${this.gatewayId}/workers-ai/${routeConfig.model}`;
+    // Use compat/chat/completions endpoint (OpenAI-compatible)
+    const url = `${this.baseUrl}/v1/${this.accountId}/${this.gatewayId}/compat/chat/completions`;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -108,7 +162,12 @@ export class AIGatewayClient {
       const response = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({
+          model: routeConfig.model, // Model in body, not URL
+          messages,
+          temperature: routeConfig.temperature ?? 0.7,
+          max_tokens: routeConfig.maxTokens ?? 2048,
+        }),
       });
 
       if (!response.ok) {
