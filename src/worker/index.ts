@@ -92,6 +92,19 @@ app.get('/api/master/status', async (c) => {
   return c.json(status);
 });
 
+app.get('/api/deployments', async (c) => {
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  const results = await c.env.DB.prepare(
+    'SELECT * FROM deployments ORDER BY created_at DESC LIMIT ? OFFSET ?'
+  ).bind(limit, offset).all();
+
+  return c.json({
+    deployments: results.results || [],
+  });
+});
+
 // ==================== Agent Management ====================
 
 app.post('/api/agents', async (c) => {
