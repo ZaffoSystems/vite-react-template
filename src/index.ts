@@ -2,6 +2,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env } from './types';
+import credentialsRouter from './worker/credentials';
 
 // Export all Durable Object classes
 export { MetaAgent } from './agents/MetaAgent';
@@ -48,10 +49,17 @@ app.get('/system-info', (c) => {
       'semantic-memory',
       'code-execution',
       'web-research',
-      'sequential-thinking'
+      'sequential-thinking',
+      'credential-management'  // NEW
     ]
   });
 });
+
+// ===================================================================
+// CREDENTIALS ROUTES - Secure Credential Management
+// ===================================================================
+
+app.route('/', credentialsRouter);
 
 // ===================================================================
 // META AGENT ROUTES - Natural Language Interface & Agent Creation
