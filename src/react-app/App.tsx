@@ -8,6 +8,7 @@ import MCPServers from './components/MCPServers';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import RAGManager from './components/RAGManager';
+import DeploymentDetail from './components/DeploymentDetail';
 import './App.css';
 
 function App() {
@@ -73,6 +74,8 @@ function App() {
             <Route path="/mcp" element={<MCPServers />} />
             <Route path="/rag" element={<RAGManager />} />
             <Route path="/settings" element={<Settings />} />
+            {/* Dynamic Routes */}
+            <Route path="/deployments/:id" element={<DeploymentDetail />} />
           </Routes>
         </main>
       </div>

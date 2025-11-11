@@ -105,6 +105,22 @@ app.get('/api/deployments', async (c) => {
   });
 });
 
+app.get('/api/deployments/:id', async (c) => {
+  const id = c.req.param('id');
+
+  const deployment = await c.env.DB.prepare(
+    'SELECT * FROM deployments WHERE id = ?'
+  ).bind(id).first();
+
+  if (!deployment) {
+    return c.json({ error: 'Deployment not found' }, 404);
+  }
+
+  return c.json({
+    deployment,
+  });
+});
+
 // ==================== Agent Management ====================
 
 app.post('/api/agents', async (c) => {

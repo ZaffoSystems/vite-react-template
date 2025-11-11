@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, RefreshCw, Zap, Database } from 'lucide-react';
 
 interface Deployment {
@@ -144,7 +145,16 @@ export default function TaskMonitor() {
                             {getStatusBadge(deployment.status)}
                           </div>
                         </td>
-                        <td style={{ fontWeight: 600 }}>{deployment.worker_name}</td>
+                        <td>
+                          <Link
+                            to={`/deployments/${deployment.id}`}
+                            style={{ fontWeight: 600, color: '#fff', textDecoration: 'none' }}
+                            onMouseOver={(e) => (e.currentTarget.style.color = '#f38020')}
+                            onMouseOut={(e) => (e.currentTarget.style.color = '#fff')}
+                          >
+                            {deployment.worker_name}
+                          </Link>
+                        </td>
                         <td>
                           {deployment.deployment_url ? (
                             <a

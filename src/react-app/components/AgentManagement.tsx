@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Activity, Brain, Zap, Cog, RefreshCw } from 'lucide-react';
 
 interface Deployment {
@@ -232,7 +233,14 @@ export default function AgentManagement() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <Zap size={20} />
                       <div>
-                        <div className="card-title">{deployment.worker_name}</div>
+                        <Link
+                          to={`/deployments/${deployment.id}`}
+                          style={{ fontSize: '16px', fontWeight: 600, color: '#fff', textDecoration: 'none' }}
+                          onMouseOver={(e) => (e.currentTarget.style.color = '#f38020')}
+                          onMouseOut={(e) => (e.currentTarget.style.color = '#fff')}
+                        >
+                          {deployment.worker_name}
+                        </Link>
                         {deployment.deployment_url && (
                           <a
                             href={deployment.deployment_url}
