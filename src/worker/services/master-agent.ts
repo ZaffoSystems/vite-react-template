@@ -15,7 +15,7 @@ import { ResourceManager, ResourceBinding } from './resource-manager';
 import { RAGService } from './rag-service';
 import { CodeGeneratorAgent } from '../agents/code-generator';
 import { CloudflareAPI } from '../lib/cloudflare-api';
-import { McpAwesomeServers } from '../lib/mcp-awesome-servers';
+import { AwesomeMCPManager } from '../lib/mcp-awesome-servers';
 
 export interface MasterAgentCommand {
   userMessage: string;
@@ -49,7 +49,8 @@ export class MasterAgent {
   private ragService: RAGService;
   private codeGenerator: CodeGeneratorAgent;
   private cloudflareAPI: CloudflareAPI;
-  private mcpServers: McpAwesomeServers;
+  private mcpServers: AwesomeMCPManager;
+  private env: Env;
 
   private systemPrompt = `You are the Master Control Agent for Cloudflare infrastructure management.
 
@@ -79,12 +80,13 @@ Examples:
 Always respond with actionable JSON execution plans, not just explanations.`;
 
   constructor(env: Env) {
+    this.env = env;
     this.aiGateway = new AIGatewayClient(env);
     this.resourceManager = new ResourceManager(env);
     this.ragService = new RAGService(env);
     this.codeGenerator = new CodeGeneratorAgent(env);
     this.cloudflareAPI = new CloudflareAPI(env);
-    this.mcpServers = new McpAwesomeServers(env);
+    this.mcpServers = new AwesomeMCPManager(env);
   }
 
   /**
@@ -148,10 +150,15 @@ Respond with JSON in this exact format:
 
     const response = await this.aiGateway.compatChatCompletion([
       { role: 'user', content: prompt },
-    ], 'dynamic/RE_Ant', { temperature: 0.2, max_tokens: 2000 });
+    ], {
+      model: 'dynamic/RE_Ant',
+      temperature: 0.2,
+      maxTokens: 2000
+    });
 
     // Parse JSON from response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const responseText = typeof response === 'string' ? response : JSON.stringify(response);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('Failed to generate execution plan');
     }
@@ -219,18 +226,18 @@ Respond with JSON in this exact format:
             break;
 
           case 'generate_code':
-            const code = await this.codeGenerator.generateWorkerCode(
+            const generatedCode = await this.codeGenerator.generateWorkerCode(
               step.params.description || step.description,
               plan.resources
             );
-            step.params.generatedCode = code;
+            step.params.generatedCode = generatedCode;
             break;
 
           case 'deploy_worker':
             const workerName = step.params.workerName || this.generateWorkerName();
-            const code = step.params.generatedCode || step.params.code;
+            const workerCode = step.params.generatedCode || step.params.code;
 
-            if (!code) {
+            if (!workerCode) {
               throw new Error('No code provided for deployment');
             }
 
@@ -240,14 +247,14 @@ Respond with JSON in this exact format:
             // Deploy worker
             const deployment = await this.cloudflareAPI.deployWorker(
               workerName,
-              code,
+              workerCode,
               bindingConfig
             );
 
             deploymentUrl = `https://${workerName}.${deployment.subdomain || 'workers.dev'}`;
 
             // Store deployment in D1
-            await this.storeDeployment(workerName, code, plan.resources, deploymentUrl);
+            await this.storeDeployment(workerName, workerCode, plan.resources, deploymentUrl);
             break;
 
           case 'call_mcp':
@@ -303,10 +310,10 @@ Respond with JSON in this exact format:
    * Execute database query
    */
   private async executeQuery(params: any): Promise<any> {
-    const { database, query, bindings } = params;
+    const { query, bindings } = params;
 
     // Use D1 for queries
-    const result = await (this.mcpServers as any).env.DB.prepare(query).bind(...(bindings || [])).all();
+    const result = await this.env.DB.prepare(query).bind(...(bindings || [])).all();
     return result.results;
   }
 
@@ -315,16 +322,16 @@ Respond with JSON in this exact format:
    */
   private async storeDeployment(
     workerName: string,
-    code: string,
+    workerCode: string,
     bindings: ResourceBinding[],
     workerUrl: string
   ): Promise<void> {
-    await (this.mcpServers as any).env.DB.prepare(
+    await this.env.DB.prepare(
       'INSERT INTO deployments (id, worker_name, script_content, bindings, status, worker_url, deployed_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).bind(
       crypto.randomUUID(),
       workerName,
-      code,
+      workerCode,
       JSON.stringify(bindings),
       'active',
       workerUrl,
@@ -340,7 +347,7 @@ Respond with JSON in this exact format:
     agentResponse: string,
     plan?: ExecutionPlan
   ): Promise<void> {
-    await (this.mcpServers as any).env.DB.prepare(
+    await this.env.DB.prepare(
       'INSERT INTO conversations (id, user_message, agent_response, intent, entities, context, agent_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).bind(
       crypto.randomUUID(),
@@ -399,13 +406,13 @@ Respond with JSON in this exact format:
     const resources = await this.resourceManager.listResources();
     const ragStats = await this.ragService.getStatistics();
 
-    const deployments = await (this.mcpServers as any).env.DB.prepare(
+    const deployments = await this.env.DB.prepare(
       'SELECT COUNT(*) as count FROM deployments WHERE status = ?'
-    ).bind('active').first<{ count: number }>();
+    ).bind('active').first();
 
-    const tasks = await (this.mcpServers as any).env.DB.prepare(
+    const tasks = await this.env.DB.prepare(
       'SELECT status, COUNT(*) as count FROM tasks GROUP BY status'
-    ).all<{ status: string; count: number }>();
+    ).all();
 
     return {
       resources: {
@@ -416,7 +423,7 @@ Respond with JSON in this exact format:
         }, {}),
       },
       rag: ragStats,
-      deployments: deployments?.count || 0,
+      deployments: (deployments as any)?.count || 0,
       tasks: tasks.results || [],
     };
   }
