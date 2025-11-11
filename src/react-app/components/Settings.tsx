@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Save, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Eye, EyeOff } from 'lucide-react';
 
 interface CredentialGroup {
   name: string;

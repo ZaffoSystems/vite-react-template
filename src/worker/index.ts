@@ -669,7 +669,7 @@ export default {
   },
 
   // Scheduled handler for periodic tasks
-  async scheduled(event: ScheduledEvent, env: Env): Promise<void> {
+  async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
     console.log('Running scheduled tasks...');
 
     // Auto-ingest from R2

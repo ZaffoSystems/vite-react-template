@@ -34,7 +34,7 @@ export class AIGatewayClient {
     } = {}
   ): Promise<AIGatewayResponse> {
     try {
-      const response = await this.ai.run(model, {
+      const response = await this.ai.run(model as any, {
         messages,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens ?? 2048,
@@ -507,7 +507,7 @@ export class AIGatewayClient {
    */
   async getEmbedding(text: string, model: string = '@cf/baai/bge-base-en-v1.5'): Promise<number[] | null> {
     try {
-      const response = await this.ai.run(model, { text }, {
+      const response = await this.ai.run(model as any, { text }, {
         gateway: { id: this.gatewayId },
       }) as any;
 

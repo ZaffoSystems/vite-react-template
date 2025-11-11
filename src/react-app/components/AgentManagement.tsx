@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Activity, Brain, Zap, Cog } from 'lucide-react';
+import { Plus, Activity, Brain, Zap, Cog } from 'lucide-react';
 
 interface Agent {
   id: string;

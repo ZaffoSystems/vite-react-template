@@ -1877,7 +1877,7 @@ export class RealAwesomeIntegrations {
 
   // ==================== PLAYWRIGHT VIA BROWSERBASE ====================
 
-  async playwright_navigate(sessionId: string, url: string): Promise<any> {
+  async playwright_navigate(_sessionId: string, _url: string): Promise<any> {
     // Uses Browserbase session created earlier
     return await this.browserbase_createSession();
   }
@@ -2268,7 +2268,7 @@ export class RealAwesomeIntegrations {
     throw new Error('Direct MySQL not supported in Workers (no TCP). Use PlanetScale HTTP API or Cloudflare D1.');
   }
 
-  async mongodb_find(collection: string, query: any): Promise<any> {
+  async mongodb_find(_collection: string, _query: any): Promise<any> {
     throw new Error('Direct MongoDB not supported in Workers (no TCP). Use mongodb_findDocuments() with Atlas Data API.');
   }
 

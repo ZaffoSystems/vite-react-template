@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { FileText, Search, Trash2, Upload, BarChart } from 'lucide-react';
+import { FileText, Search, Upload, BarChart } from 'lucide-react';
 
 export default function RAGManager() {
   const [activeTab, setActiveTab] = useState('upload');
-  const [documents, setDocuments] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [statistics, setStatistics] = useState<any>(null);

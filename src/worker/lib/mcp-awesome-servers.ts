@@ -553,7 +553,7 @@ export class AwesomeMCPManager {
   /**
    * Call a tool - NOT IMPLEMENTED (use specific methods instead)
    */
-  async callTool(serverId: string, toolName: string, params: any): Promise<any> {
+  async callTool(_serverId: string, _toolName: string, _params: any): Promise<any> {
     throw new Error(`Generic callTool not supported. Use specific integration methods like github_listRepos(), slack_sendMessage(), etc.`);
   }
 

@@ -65,13 +65,13 @@ export default function MCPServers() {
       const cfRes = await fetch('/api/mcp-cf/init', {
         method: 'POST',
       });
-      const cfData = await cfRes.json();
+      await cfRes.json();
 
       // Initialize Awesome servers
       const awesomeRes = await fetch('/api/mcp-awesome/init', {
         method: 'POST',
       });
-      const awesomeData = await awesomeRes.json();
+      await awesomeRes.json();
 
       // Reload status
       await loadServers();

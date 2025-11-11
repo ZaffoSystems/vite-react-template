@@ -184,7 +184,6 @@ export class AgentOrchestrator {
    */
   private async executeLearningTask(agent: AgentConfig, task: Task): Promise<any> {
     // Retrieve past logs for learning
-    const logs = await this.ai.getLogs({ limit: 50 });
 
     // Get agent memory
     const doStub = this.env.AGENT_STATE.get(this.env.AGENT_STATE.idFromName(agent.id));

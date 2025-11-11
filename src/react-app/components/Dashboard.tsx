@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, CheckSquare, Server, Activity, Database, FileText, Package } from 'lucide-react';
+import { Server, Activity, Database, FileText, Package } from 'lucide-react';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
