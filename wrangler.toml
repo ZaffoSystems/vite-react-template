@@ -1,0 +1,217 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "ultra-multi-agent-system"
+main = "src/index.ts"
+compatibility_date = "2025-11-10"
+compatibility_flags = ["nodejs_compat"]
+
+# TODO: Set your account_id from 'wrangler whoami'
+account_id = "YOUR_ACCOUNT_ID"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# ===================================================================
+# DURABLE OBJECTS - Enhanced Agent System
+# ===================================================================
+
+[[durable_objects.bindings]]
+name = "META_AGENT"
+class_name = "MetaAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "BUILDER_AGENT"
+class_name = "BuilderAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "EXECUTOR_AGENT"
+class_name = "ExecutorAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "COORDINATOR_AGENT"
+class_name = "CoordinatorAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "MEMORY_AGENT"
+class_name = "MemoryAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "RESEARCH_AGENT"
+class_name = "ResearchAgent"
+script_name = "ultra-multi-agent-system"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MetaAgent", "BuilderAgent", "ExecutorAgent", "CoordinatorAgent", "MemoryAgent", "ResearchAgent"]
+
+# ===================================================================
+# STORAGE & AI BINDINGS
+# ===================================================================
+
+[ai]
+binding = "AI"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "agent-memory"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "agent-database"
+database_id = "YOUR_D1_DATABASE_ID"  # Run: wrangler d1 create agent-database
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_CACHE_KV_ID"  # Run: wrangler kv:namespace create CACHE
+preview_id = "YOUR_CACHE_PREVIEW_KV_ID"  # Run: wrangler kv:namespace create CACHE --preview
+
+[[kv_namespaces]]
+binding = "MCP_OAUTH"
+id = "YOUR_MCP_OAUTH_KV_ID"  # Run: wrangler kv:namespace create MCP_OAUTH
+preview_id = "YOUR_MCP_OAUTH_PREVIEW_KV_ID"  # Run: wrangler kv:namespace create MCP_OAUTH --preview
+
+[[kv_namespaces]]
+binding = "MEMORY"
+id = "YOUR_MEMORY_KV_ID"  # Run: wrangler kv:namespace create MEMORY
+
+# ===================================================================
+# 15 CLOUDFLARE MCP SERVERS
+# ===================================================================
+
+[[mcp]]
+binding = "MCP_DOCS"
+server_url = "https://docs.mcp.cloudflare.com/mcp"
+name = "cloudflare-docs"
+
+[[mcp]]
+binding = "MCP_BINDINGS"
+server_url = "https://bindings.mcp.cloudflare.com/mcp"
+name = "workers-bindings"
+
+[[mcp]]
+binding = "MCP_BUILDS"
+server_url = "https://builds.mcp.cloudflare.com/mcp"
+name = "workers-builds"
+
+[[mcp]]
+binding = "MCP_OBSERVABILITY"
+server_url = "https://observability.mcp.cloudflare.com/mcp"
+name = "observability"
+
+[[mcp]]
+binding = "MCP_RADAR"
+server_url = "https://radar.mcp.cloudflare.com/mcp"
+name = "radar"
+
+[[mcp]]
+binding = "MCP_CONTAINER"
+server_url = "https://containers.mcp.cloudflare.com/mcp"
+name = "container"
+
+[[mcp]]
+binding = "MCP_BROWSER"
+server_url = "https://browser.mcp.cloudflare.com/mcp"
+name = "browser-rendering"
+
+[[mcp]]
+binding = "MCP_LOGPUSH"
+server_url = "https://logs.mcp.cloudflare.com/mcp"
+name = "logpush"
+
+[[mcp]]
+binding = "MCP_AI_GATEWAY"
+server_url = "https://ai-gateway.mcp.cloudflare.com/mcp"
+name = "ai-gateway"
+
+[[mcp]]
+binding = "MCP_AI_SEARCH"
+server_url = "https://autorag.mcp.cloudflare.com/mcp"
+name = "ai-search"
+
+[[mcp]]
+binding = "MCP_AUDIT_LOGS"
+server_url = "https://auditlogs.mcp.cloudflare.com/mcp"
+name = "audit-logs"
+
+[[mcp]]
+binding = "MCP_DNS_ANALYTICS"
+server_url = "https://dns-analytics.mcp.cloudflare.com/mcp"
+name = "dns-analytics"
+
+[[mcp]]
+binding = "MCP_DEX"
+server_url = "https://dex.mcp.cloudflare.com/mcp"
+name = "dex"
+
+[[mcp]]
+binding = "MCP_CASB"
+server_url = "https://casb.mcp.cloudflare.com/mcp"
+name = "casb"
+
+[[mcp]]
+binding = "MCP_GRAPHQL"
+server_url = "https://graphql.mcp.cloudflare.com/mcp"
+name = "graphql"
+
+# ===================================================================
+# EXTERNAL MCP SERVERS - Extended Capabilities
+# ===================================================================
+
+# Context7 - Up-to-date documentation
+[[mcp]]
+binding = "MCP_CONTEXT7"
+server_url = "npx:@upstash/context7-mcp"
+name = "context7"
+
+# E2B - Code execution sandboxes
+[[mcp]]
+binding = "MCP_E2B"
+server_url = "npx:@e2b/mcp-server"
+name = "e2b-sandbox"
+env = { E2B_API_KEY = "" }  # Set via: wrangler secret put E2B_API_KEY
+
+# Firecrawl - Web scraping
+[[mcp]]
+binding = "MCP_FIRECRAWL"
+server_url = "npx:@mendable/firecrawl-mcp"
+name = "firecrawl"
+env = { FIRECRAWL_API_KEY = "" }  # Set via: wrangler secret put FIRECRAWL_API_KEY
+
+# Brave Search - Web search
+[[mcp]]
+binding = "MCP_BRAVE_SEARCH"
+server_url = "npx:@modelcontextprotocol/server-brave-search"
+name = "brave-search"
+env = { BRAVE_API_KEY = "" }  # Set via: wrangler secret put BRAVE_API_KEY
+
+# Sequential Thinking - Problem solving
+[[mcp]]
+binding = "MCP_SEQUENTIAL_THINKING"
+server_url = "npx:@modelcontextprotocol/server-sequential-thinking"
+name = "sequential-thinking"
+
+# File System - File operations
+[[mcp]]
+binding = "MCP_FILESYSTEM"
+server_url = "npx:@modelcontextprotocol/server-filesystem"
+name = "filesystem"
+
+# ===================================================================
+# ENVIRONMENT VARIABLES
+# ===================================================================
+
+[vars]
+ENVIRONMENT = "development"
+ENABLE_MEMORY = "true"
+ENABLE_SEQUENTIAL_THINKING = "true"
+MAX_CONCURRENT_AGENTS = "10"
+
+# Production environment
+[env.production]
+name = "ultra-multi-agent-system-prod"
+vars = { ENVIRONMENT = "production", MAX_CONCURRENT_AGENTS = "50" }
