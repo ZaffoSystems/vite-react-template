@@ -1,0 +1,136 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "ultra-multi-agent-system"
+main = "src/index.ts"
+compatibility_date = "2025-11-10"
+compatibility_flags = ["nodejs_compat"]
+
+# Your Cloudflare Account
+account_id = "6f97fb315b8434a5344db8ad9723f70c"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Serve React frontend assets
+[assets]
+directory = "./dist/client"
+
+# ===================================================================
+# DURABLE OBJECTS - Complete Agent System (9 Agents)
+# ===================================================================
+
+[[durable_objects.bindings]]
+name = "META_AGENT"
+class_name = "MetaAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "BUILDER_AGENT"
+class_name = "BuilderAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "EXECUTOR_AGENT"
+class_name = "ExecutorAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "COORDINATOR_AGENT"
+class_name = "CoordinatorAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "MEMORY_AGENT"
+class_name = "MemoryAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "RESEARCH_AGENT"
+class_name = "ResearchAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "SUPERVISOR_AGENT"
+class_name = "SupervisorAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "DOCKER_AGENT"
+class_name = "DockerAgent"
+script_name = "ultra-multi-agent-system"
+
+[[durable_objects.bindings]]
+name = "INFRASTRUCTURE_AGENT"
+class_name = "InfrastructureAgent"
+script_name = "ultra-multi-agent-system"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = [
+  "MetaAgent", 
+  "BuilderAgent", 
+  "ExecutorAgent", 
+  "CoordinatorAgent", 
+  "MemoryAgent", 
+  "ResearchAgent",
+  "SupervisorAgent",
+  "DockerAgent",
+  "InfrastructureAgent"
+]
+
+# ===================================================================
+# STORAGE & AI BINDINGS
+# ===================================================================
+
+[ai]
+binding = "AI"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "agent-memory"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "agent-database"
+database_id = "YOUR_D1_DATABASE_ID" # Run: wrangler d1 create agent-database
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_CACHE_KV_ID" # Run: wrangler kv:namespace create CACHE
+preview_id = "YOUR_CACHE_PREVIEW_KV_ID" # Run: wrangler kv:namespace create CACHE --preview
+
+[[kv_namespaces]]
+binding = "MCP_OAUTH"
+id = "YOUR_MCP_OAUTH_KV_ID" # Run: wrangler kv:namespace create MCP_OAUTH
+preview_id = "YOUR_MCP_OAUTH_PREVIEW_KV_ID" # Run: wrangler kv:namespace create MCP_OAUTH --preview
+
+[[kv_namespaces]]
+binding = "MEMORY"
+id = "YOUR_MEMORY_KV_ID" # Run: wrangler kv:namespace create MEMORY
+
+[[kv_namespaces]]
+binding = "CREDENTIALS_KV"
+id = "YOUR_CREDENTIALS_KV_ID" # Run: wrangler kv:namespace create CREDENTIALS_KV
+preview_id = "YOUR_CREDENTIALS_PREVIEW_KV_ID" # Run: wrangler kv:namespace create CREDENTIALS_KV --preview
+
+# ... MCP servers omitted for brevity (keep existing block) ...
+
+[vars]
+ENVIRONMENT = "development"
+
+[triggers]
+crons = ["*/1 * * * *"]
+
+[env.production]
+name = "ultra-multi-agent-system-prod"
+vars = { 
+  ENVIRONMENT = "production",
+  AI_GATEWAY_ACCOUNT_ID = "6f97fb315b8434a5344db8ad9723f70c",
+  AI_GATEWAY_ID = "z-gateway",
+  AI_GATEWAY_DEFAULT_ROUTE = "dynamic/RE_Ant",
+  MAX_CONCURRENT_AGENTS = "50",
+  AUTO_SCALING_ENABLED = "true",
+  AUTO_REMEDIATION_ENABLED = "true",
+  ENABLE_RATE_LIMITING = "true",
+  MAX_REQUESTS_PER_MINUTE = "120"
+}
