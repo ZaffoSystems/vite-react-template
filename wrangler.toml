@@ -105,6 +105,11 @@ preview_id = "YOUR_MCP_OAUTH_PREVIEW_KV_ID"  # Run: wrangler kv:namespace create
 binding = "MEMORY"
 id = "YOUR_MEMORY_KV_ID"  # Run: wrangler kv:namespace create MEMORY
 
+[[kv_namespaces]]
+binding = "CREDENTIALS_KV"
+id = "YOUR_CREDENTIALS_KV_ID"  # Run: wrangler kv:namespace create CREDENTIALS_KV
+preview_id = "YOUR_CREDENTIALS_PREVIEW_KV_ID"  # Run: wrangler kv:namespace create CREDENTIALS_KV --preview
+
 # ===================================================================
 # 15 CLOUDFLARE MCP SERVERS
 # ===================================================================
