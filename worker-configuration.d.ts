@@ -2761,35 +2761,6 @@ declare abstract class Base_Ai_Cf_Baai_Bge_Base_En_V1_5 {
     inputs: Ai_Cf_Baai_Bge_Base_En_V1_5_Input;
     postProcessedOutputs: Ai_Cf_Baai_Bge_Base_En_V1_5_Output;
 }
-type Ai_Cf_Openai_Whisper_Input = string | {
-    /**
-     * An array of integers that represent the audio data constrained to 8-bit unsigned integer values
-     */
-    audio: number[];
-};
-interface Ai_Cf_Openai_Whisper_Output {
-    /**
-     * The transcription
-     */
-    text: string;
-    word_count?: number;
-    words?: {
-        word?: string;
-        /**
-         * The second this word begins in the recording
-         */
-        start?: number;
-        /**
-         * The ending second when the word completes
-         */
-        end?: number;
-    }[];
-    vtt?: string;
-}
-declare abstract class Base_Ai_Cf_Openai_Whisper {
-    inputs: Ai_Cf_Openai_Whisper_Input;
-    postProcessedOutputs: Ai_Cf_Openai_Whisper_Output;
-}
 type Ai_Cf_Meta_M2M100_1_2B_Input = {
     /**
      * The text to be translated
@@ -2943,141 +2914,6 @@ interface Ai_Cf_Unum_Uform_Gen2_Qwen_500M_Output {
 declare abstract class Base_Ai_Cf_Unum_Uform_Gen2_Qwen_500M {
     inputs: Ai_Cf_Unum_Uform_Gen2_Qwen_500M_Input;
     postProcessedOutputs: Ai_Cf_Unum_Uform_Gen2_Qwen_500M_Output;
-}
-type Ai_Cf_Openai_Whisper_Tiny_En_Input = string | {
-    /**
-     * An array of integers that represent the audio data constrained to 8-bit unsigned integer values
-     */
-    audio: number[];
-};
-interface Ai_Cf_Openai_Whisper_Tiny_En_Output {
-    /**
-     * The transcription
-     */
-    text: string;
-    word_count?: number;
-    words?: {
-        word?: string;
-        /**
-         * The second this word begins in the recording
-         */
-        start?: number;
-        /**
-         * The ending second when the word completes
-         */
-        end?: number;
-    }[];
-    vtt?: string;
-}
-declare abstract class Base_Ai_Cf_Openai_Whisper_Tiny_En {
-    inputs: Ai_Cf_Openai_Whisper_Tiny_En_Input;
-    postProcessedOutputs: Ai_Cf_Openai_Whisper_Tiny_En_Output;
-}
-interface Ai_Cf_Openai_Whisper_Large_V3_Turbo_Input {
-    /**
-     * Base64 encoded value of the audio data.
-     */
-    audio: string;
-    /**
-     * Supported tasks are 'translate' or 'transcribe'.
-     */
-    task?: string;
-    /**
-     * The language of the audio being transcribed or translated.
-     */
-    language?: string;
-    /**
-     * Preprocess the audio with a voice activity detection model.
-     */
-    vad_filter?: boolean;
-    /**
-     * A text prompt to help provide context to the model on the contents of the audio.
-     */
-    initial_prompt?: string;
-    /**
-     * The prefix it appended the the beginning of the output of the transcription and can guide the transcription result.
-     */
-    prefix?: string;
-}
-interface Ai_Cf_Openai_Whisper_Large_V3_Turbo_Output {
-    transcription_info?: {
-        /**
-         * The language of the audio being transcribed or translated.
-         */
-        language?: string;
-        /**
-         * The confidence level or probability of the detected language being accurate, represented as a decimal between 0 and 1.
-         */
-        language_probability?: number;
-        /**
-         * The total duration of the original audio file, in seconds.
-         */
-        duration?: number;
-        /**
-         * The duration of the audio after applying Voice Activity Detection (VAD) to remove silent or irrelevant sections, in seconds.
-         */
-        duration_after_vad?: number;
-    };
-    /**
-     * The complete transcription of the audio.
-     */
-    text: string;
-    /**
-     * The total number of words in the transcription.
-     */
-    word_count?: number;
-    segments?: {
-        /**
-         * The starting time of the segment within the audio, in seconds.
-         */
-        start?: number;
-        /**
-         * The ending time of the segment within the audio, in seconds.
-         */
-        end?: number;
-        /**
-         * The transcription of the segment.
-         */
-        text?: string;
-        /**
-         * The temperature used in the decoding process, controlling randomness in predictions. Lower values result in more deterministic outputs.
-         */
-        temperature?: number;
-        /**
-         * The average log probability of the predictions for the words in this segment, indicating overall confidence.
-         */
-        avg_logprob?: number;
-        /**
-         * The compression ratio of the input to the output, measuring how much the text was compressed during the transcription process.
-         */
-        compression_ratio?: number;
-        /**
-         * The probability that the segment contains no speech, represented as a decimal between 0 and 1.
-         */
-        no_speech_prob?: number;
-        words?: {
-            /**
-             * The individual word transcribed from the audio.
-             */
-            word?: string;
-            /**
-             * The starting time of the word within the audio, in seconds.
-             */
-            start?: number;
-            /**
-             * The ending time of the word within the audio, in seconds.
-             */
-            end?: number;
-        }[];
-    }[];
-    /**
-     * The transcription in WebVTT format, which includes timing and text information for use in subtitles.
-     */
-    vtt?: string;
-}
-declare abstract class Base_Ai_Cf_Openai_Whisper_Large_V3_Turbo {
-    inputs: Ai_Cf_Openai_Whisper_Large_V3_Turbo_Input;
-    postProcessedOutputs: Ai_Cf_Openai_Whisper_Large_V3_Turbo_Output;
 }
 type Ai_Cf_Baai_Bge_M3_Input = BGEM3InputQueryAndContexts | BGEM3InputEmbedding | {
     /**
@@ -5191,13 +5027,10 @@ interface AiModels {
     "@cf/facebook/bart-large-cnn": BaseAiSummarization;
     "@cf/llava-hf/llava-1.5-7b-hf": BaseAiImageToText;
     "@cf/baai/bge-base-en-v1.5": Base_Ai_Cf_Baai_Bge_Base_En_V1_5;
-    "@cf/openai/whisper": Base_Ai_Cf_Openai_Whisper;
     "@cf/meta/m2m100-1.2b": Base_Ai_Cf_Meta_M2M100_1_2B;
     "@cf/baai/bge-small-en-v1.5": Base_Ai_Cf_Baai_Bge_Small_En_V1_5;
     "@cf/baai/bge-large-en-v1.5": Base_Ai_Cf_Baai_Bge_Large_En_V1_5;
     "@cf/unum/uform-gen2-qwen-500m": Base_Ai_Cf_Unum_Uform_Gen2_Qwen_500M;
-    "@cf/openai/whisper-tiny-en": Base_Ai_Cf_Openai_Whisper_Tiny_En;
-    "@cf/openai/whisper-large-v3-turbo": Base_Ai_Cf_Openai_Whisper_Large_V3_Turbo;
     "@cf/baai/bge-m3": Base_Ai_Cf_Baai_Bge_M3;
     "@cf/black-forest-labs/flux-1-schnell": Base_Ai_Cf_Black_Forest_Labs_Flux_1_Schnell;
     "@cf/meta/llama-3.2-11b-vision-instruct": Base_Ai_Cf_Meta_Llama_3_2_11B_Vision_Instruct;
@@ -5331,7 +5164,7 @@ type AiGatewayLog = {
     response_head_complete: boolean;
     created_at: Date;
 };
-type AIGatewayProviders = 'workers-ai' | 'anthropic' | 'aws-bedrock' | 'azure-openai' | 'google-vertex-ai' | 'huggingface' | 'openai' | 'perplexity-ai' | 'replicate' | 'groq' | 'cohere' | 'google-ai-studio' | 'mistral' | 'grok' | 'openrouter' | 'deepseek' | 'cerebras' | 'cartesia' | 'elevenlabs' | 'adobe-firefly';
+type AIGatewayProviders = 'workers-ai' | 'anthropic' | 'aws-bedrock' | 'google-vertex-ai' | 'huggingface' | 'perplexity-ai' | 'replicate' | 'groq' | 'cohere' | 'google-ai-studio' | 'mistral' | 'grok' | 'deepseek' | 'cerebras' | 'cartesia' | 'elevenlabs' | 'adobe-firefly';
 type AIGatewayHeaders = {
     'cf-aig-metadata': Record<string, number | string | boolean | null | bigint> | string;
     'cf-aig-custom-cost': {

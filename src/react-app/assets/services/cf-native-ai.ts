@@ -18,7 +18,6 @@ export enum ModelCategory {
   EMBEDDINGS = 'embeddings',
   IMAGE_CLASSIFICATION = 'image-classification',
   TEXT_TO_IMAGE = 'text-to-image',
-  AUTOMATIC_SPEECH_RECOGNITION = 'automatic-speech-recognition',
 }
 
 /**
@@ -43,9 +42,6 @@ export const CF_NATIVE_MODELS = {
 
   // Image Generation
   STABLE_DIFFUSION: '@cf/stabilityai/stable-diffusion-xl-base-1.0',
-
-  // Speech Recognition
-  WHISPER: '@cf/openai/whisper',
 } as const;
 
 export interface ChatMessage {
@@ -221,34 +217,6 @@ export class CloudflareNativeAI {
       throw new ZAgentError(
         ErrorType.EXTERNAL_SERVICE,
         `Cloudflare translation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        500
-      );
-    }
-  }
-
-  /**
-   * Transcribe audio using Cloudflare's Whisper
-   */
-  async transcribe(audio: ArrayBuffer): Promise<{
-    text: string;
-    model: string;
-  }> {
-    try {
-      const result = await this.ai.run(CF_NATIVE_MODELS.WHISPER, {
-        audio,
-      });
-
-      // Type assertion for transcription result
-      const transcription = result as { text: string };
-
-      return {
-        text: transcription.text,
-        model: CF_NATIVE_MODELS.WHISPER,
-      };
-    } catch (error) {
-      throw new ZAgentError(
-        ErrorType.EXTERNAL_SERVICE,
-        `Cloudflare transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500
       );
     }

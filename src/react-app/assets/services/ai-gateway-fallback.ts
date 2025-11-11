@@ -101,29 +101,6 @@ export class EnhancedAIGateway {
       }
     });
 
-    // OpenAI provider
-    this.providers.set('openai', {
-      id: 'openai',
-      name: 'OpenAI API',
-      baseUrl: 'https://api.openai.com/v1',
-      apiKey: config.originalEnv?.OPENAI_API_KEY || config.originalEnv?.OPENAI_TOKEN || '',
-      enabled: !!config.originalEnv?.OPENAI_API_KEY || !!config.originalEnv?.OPENAI_TOKEN,
-      healthStatus: 'unknown' as any,
-      lastHealthCheck: new Date(0),
-      responseTime: 0,
-      errorRate: 0,
-      fallbackPriority: 2,
-      modelMap: {
-        'gpt-4': 'gpt-4',
-        'gpt-4-32k': 'gpt-4-32k',
-        'gpt-3.5-turbo': 'gpt-3.5-turbo',
-        'gpt-3.5-turbo-16k': 'gpt-3.5-turbo-16k',
-        // Map Cloudflare models to closest OpenAI equivalents
-        '@cf/meta/llama-2-7b-chat-fp16': 'gpt-3.5-turbo',
-        '@cf/mistral/mistral-7b-instruct-v0.1': 'gpt-3.5-turbo'
-      }
-    });
-
     // Anthropic provider
     this.providers.set('anthropic', {
       id: 'anthropic',
@@ -272,18 +249,6 @@ export class EnhancedAIGateway {
    */
   private transformRequestForProvider(request: AIRequest, provider: AIProviderConfig, actualModel: string): any {
     switch (provider.id) {
-      case 'openai':
-        return {
-          model: actualModel,
-          messages: request.messages,
-          temperature: request.temperature,
-          max_tokens: request.max_tokens,
-          top_p: request.top_p,
-          frequency_penalty: request.frequency_penalty,
-          presence_penalty: request.presence_penalty,
-          stop: request.stop
-        };
-      
       case 'anthropic':
         // Anthropic uses a different format
         return {
@@ -370,10 +335,9 @@ export class EnhancedAIGateway {
           } : undefined
         };
       
-      case 'openai':
       case 'cloudflare':
       default:
-        // OpenAI and Cloudflare formats are similar
+        // Cloudflare format
         return response;
     }
   }
@@ -557,7 +521,7 @@ export class EnhancedAIGateway {
             const data = await response.json() as any;
 
             if (data.data && Array.isArray(data.data)) {
-              // OpenAI/Cloudflare format
+              // Cloudflare format
               for (const model of data.data) {
                 allModels.push({
                   provider: providerId,
@@ -668,7 +632,7 @@ export const initializeEnhancedAIGateway = async (c: Context, next: () => Promis
   const env = c.env || process.env;
   const fallbackConfig: AIFallbackConfig = {
     primaryProvider: env.AI_PRIMARY_PROVIDER || 'cloudflare',
-    fallbackProviders: (env.AI_FALLBACK_PROVIDERS || 'openai,anthropic,google').split(','),
+    fallbackProviders: (env.AI_FALLBACK_PROVIDERS || 'anthropic,google').split(','),
     maxRetries: parseInt(env.AI_MAX_FALLBACK_RETRIES || '3'),
     timeout: parseInt(env.AI_REQUEST_TIMEOUT || '30000'), // 30 seconds
     providerWeights: {}, // Will be calculated dynamically
