@@ -210,7 +210,7 @@ app.post('/test/:service', async (c) => {
         if (!ghRes.ok) {
           return c.json({ success: false, error: 'Invalid GitHub token' }, 400);
         }
-        const ghData = await ghRes.json();
+        const ghData = await ghRes.json() as any;
         return c.json({ success: true, username: ghData.login });
 
       case 'slack':
@@ -223,7 +223,7 @@ app.post('/test/:service', async (c) => {
             'Authorization': `Bearer ${credentials.SLACK_BOT_TOKEN}`,
           },
         });
-        const slackData = await slackRes.json();
+        const slackData = await slackRes.json() as any;
         if (!slackData.ok) {
           return c.json({ success: false, error: 'Invalid Slack token' }, 400);
         }

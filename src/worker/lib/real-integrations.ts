@@ -96,7 +96,7 @@ export class RealAwesomeIntegrations {
       throw new Error(`GitHub API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     // Decode base64 content
     const content = atob(data.content);
     return { ...data, decoded_content: content };
@@ -118,7 +118,7 @@ export class RealAwesomeIntegrations {
       body: JSON.stringify({ channel, text })
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.ok) {
       throw new Error(`Slack API error: ${data.error}`);
     }
@@ -137,7 +137,7 @@ export class RealAwesomeIntegrations {
       }
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.ok) {
       throw new Error(`Slack API error: ${data.error}`);
     }
@@ -156,7 +156,7 @@ export class RealAwesomeIntegrations {
       }
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.ok) {
       throw new Error(`Slack API error: ${data.error}`);
     }
@@ -1367,7 +1367,7 @@ export class RealAwesomeIntegrations {
     }
 
     const tokenData = await response.json();
-    return tokenData.access_token;
+    return (tokenData as any).access_token;
   }
 
   async gcp_compute_listInstances(projectId: string, zone: string): Promise<any> {

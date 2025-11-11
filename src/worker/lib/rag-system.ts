@@ -174,9 +174,9 @@ export class RAGSystem {
       if (match.score < minScore) continue;
 
       searchResults.push({
-        documentId: match.metadata.documentId as string,
+        documentId: match.metadata!.documentId as string,
         chunkId: match.id,
-        content: match.metadata.content as string,
+        content: match.metadata!.content as string,
         score: match.score,
         metadata: match.metadata as Record<string, any>,
       });

@@ -39,7 +39,7 @@ export class ResourceManager {
       }
     );
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.success) {
       throw new Error(`Failed to create KV namespace: ${JSON.stringify(data.errors)}`);
     }
@@ -75,7 +75,7 @@ export class ResourceManager {
       }
     );
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.success) {
       throw new Error(`Failed to create D1 database: ${JSON.stringify(data.errors)}`);
     }
@@ -111,7 +111,7 @@ export class ResourceManager {
       }
     );
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.success) {
       throw new Error(`Failed to create R2 bucket: ${JSON.stringify(data.errors)}`);
     }
@@ -157,7 +157,7 @@ export class ResourceManager {
       }
     );
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.success) {
       throw new Error(`Failed to create Vectorize index: ${JSON.stringify(data.errors)}`);
     }
@@ -207,7 +207,7 @@ export class ResourceManager {
       }
     );
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.success) {
       throw new Error(`Failed to create Hyperdrive: ${JSON.stringify(data.errors)}`);
     }
@@ -243,7 +243,7 @@ export class ResourceManager {
       }
     );
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.success) {
       throw new Error(`Failed to create Queue: ${JSON.stringify(data.errors)}`);
     }

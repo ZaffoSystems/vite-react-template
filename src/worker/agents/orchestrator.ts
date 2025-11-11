@@ -466,7 +466,7 @@ ${thoughtProcess.map(t => `Thought ${t.iteration}: ${t.thought}\nAction: ${t.act
    */
   private selectAgent(task: Task): AgentConfig | undefined {
     for (const agent of this.agents.values()) {
-      if (agent.status === 'idle' && this.canAgentHandleTask(agent, task)) {
+      if ((agent as any).status === 'idle' && this.canAgentHandleTask(agent, task)) {
         return agent;
       }
     }
