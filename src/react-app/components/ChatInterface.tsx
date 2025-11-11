@@ -63,37 +63,24 @@ export default function ChatInterface() {
 
       setLoading(false);
 
-      if (result.success !== false) {
-        // Format the response
-        let content = '';
+      if (result.success) {
+        // Format the NEW response from MasterAgent
+        let content = `✅ ${result.message}\n\n`;
 
-        if (result.plan) {
-          content += `**Plan**: ${result.plan.goal}\n\n`;
+        if (result.deploymentUrl) {
+          content += `**Deployment URL**: ${result.deploymentUrl}\n\n`;
         }
 
-        if (result.execution) {
-          content += `**Execution**:\n`;
-          result.execution.forEach((exec: any, idx: number) => {
-            content += `${idx + 1}. ${exec.step}: ${exec.success ? '✓' : '✗'}\n`;
-
-            if (exec.result?.deployed) {
-              content += `   → Deployed: ${exec.result.name}\n`;
-              content += `   → URL: ${exec.result.url}\n`;
-            }
-
-            if (exec.result?.agent) {
-              content += `   → Sub-agent: ${exec.result.agent}\n`;
-              content += `   → URL: ${exec.result.url}\n`;
-            }
-
-            if (exec.error) {
-              content += `   → Error: ${exec.error}\n`;
-            }
+        if (result.resourceIds && Object.keys(result.resourceIds).length > 0) {
+          content += `**Resources Created**:\n`;
+          Object.entries(result.resourceIds).forEach(([name, id]) => {
+            content += `  • ${name}: \`${id}\`\n`;
           });
+          content += '\n';
         }
 
-        if (!content) {
-          content = JSON.stringify(result, null, 2);
+        if (result.data) {
+          content += `**Data**:\n\`\`\`json\n${JSON.stringify(result.data, null, 2)}\n\`\`\`\n`;
         }
 
         const assistantMessage: Message = {
@@ -108,7 +95,7 @@ export default function ChatInterface() {
         const errorMessage: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `Error: ${result.error || 'Command failed'}`,
+          content: `❌ Error: ${result.error || result.message || 'Command failed'}`,
           timestamp: Date.now(),
         };
         setMessages(prev => [...prev, errorMessage]);

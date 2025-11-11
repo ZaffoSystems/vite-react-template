@@ -8,6 +8,9 @@ export default function InfrastructureControl() {
   const [r2Buckets, setR2Buckets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('workers');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newResourceName, setNewResourceName] = useState('');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -64,6 +67,59 @@ export default function InfrastructureControl() {
     }
   };
 
+  const createResource = async () => {
+    if (!newResourceName.trim()) return;
+
+    setCreating(true);
+    try {
+      let endpoint = '';
+      switch (activeTab) {
+        case 'kv':
+          endpoint = '/api/resources/kv';
+          break;
+        case 'd1':
+          endpoint = '/api/resources/d1';
+          break;
+        case 'r2':
+          endpoint = '/api/resources/r2';
+          break;
+        default:
+          return;
+      }
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newResourceName }),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        setShowCreateModal(false);
+        setNewResourceName('');
+        // Reload the specific resource list
+        switch (activeTab) {
+          case 'kv':
+            await loadKV();
+            break;
+          case 'd1':
+            await loadD1();
+            break;
+          case 'r2':
+            await loadR2();
+            break;
+        }
+      } else {
+        alert(`Failed to create resource: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const renderWorkers = () => (
     <div className="grid grid-2">
       {workers.map((worker, idx) => (
@@ -90,77 +146,98 @@ export default function InfrastructureControl() {
   );
 
   const renderKV = () => (
-    <div className="grid grid-2">
-      {kvNamespaces.map((ns, idx) => (
-        <div key={idx} className="card">
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Package size={20} />
-              <div className="card-title">{ns.title}</div>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+          + Create KV Namespace
+        </button>
+      </div>
+      <div className="grid grid-2">
+        {kvNamespaces.map((ns, idx) => (
+          <div key={idx} className="card">
+            <div className="card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Package size={20} />
+                <div className="card-title">{ns.title}</div>
+              </div>
+              <span className="status-badge status-active">Active</span>
             </div>
-            <span className="status-badge status-active">Active</span>
+            <div style={{ fontSize: '12px', color: '#888' }}>
+              ID: {ns.id}
+            </div>
           </div>
-          <div style={{ fontSize: '12px', color: '#888' }}>
-            ID: {ns.id}
+        ))}
+        {kvNamespaces.length === 0 && (
+          <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <Package size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
+            <p style={{ color: '#666' }}>No KV namespaces found</p>
           </div>
-        </div>
-      ))}
-      {kvNamespaces.length === 0 && (
-        <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
-          <Package size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p style={{ color: '#666' }}>No KV namespaces found</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
   const renderD1 = () => (
-    <div className="grid grid-2">
-      {d1Databases.map((db, idx) => (
-        <div key={idx} className="card">
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Database size={20} />
-              <div className="card-title">{db.name}</div>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+          + Create D1 Database
+        </button>
+      </div>
+      <div className="grid grid-2">
+        {d1Databases.map((db, idx) => (
+          <div key={idx} className="card">
+            <div className="card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Database size={20} />
+                <div className="card-title">{db.name}</div>
+              </div>
+              <span className="status-badge status-active">Active</span>
             </div>
-            <span className="status-badge status-active">Active</span>
+            <div style={{ fontSize: '12px', color: '#888' }}>
+              ID: {db.uuid || db.id}
+            </div>
           </div>
-          <div style={{ fontSize: '12px', color: '#888' }}>
-            ID: {db.uuid || db.id}
+        ))}
+        {d1Databases.length === 0 && (
+          <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <Database size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
+            <p style={{ color: '#666' }}>No D1 databases found</p>
           </div>
-        </div>
-      ))}
-      {d1Databases.length === 0 && (
-        <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
-          <Database size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p style={{ color: '#666' }}>No D1 databases found</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
   const renderR2 = () => (
-    <div className="grid grid-2">
-      {r2Buckets.map((bucket, idx) => (
-        <div key={idx} className="card">
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <HardDrive size={20} />
-              <div className="card-title">{bucket.name}</div>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+          + Create R2 Bucket
+        </button>
+      </div>
+      <div className="grid grid-2">
+        {r2Buckets.map((bucket, idx) => (
+          <div key={idx} className="card">
+            <div className="card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <HardDrive size={20} />
+                <div className="card-title">{bucket.name}</div>
+              </div>
+              <span className="status-badge status-active">Active</span>
             </div>
-            <span className="status-badge status-active">Active</span>
+            <div style={{ fontSize: '12px', color: '#888' }}>
+              Created: {bucket.creation_date && new Date(bucket.creation_date).toLocaleDateString()}
+            </div>
           </div>
-          <div style={{ fontSize: '12px', color: '#888' }}>
-            Created: {bucket.creation_date && new Date(bucket.creation_date).toLocaleDateString()}
+        ))}
+        {r2Buckets.length === 0 && (
+          <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <HardDrive size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
+            <p style={{ color: '#666' }}>No R2 buckets found</p>
           </div>
-        </div>
-      ))}
-      {r2Buckets.length === 0 && (
-        <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
-          <HardDrive size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p style={{ color: '#666' }}>No R2 buckets found</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
@@ -217,6 +294,54 @@ export default function InfrastructureControl() {
         {activeTab === 'd1' && renderD1()}
         {activeTab === 'r2' && renderR2()}
       </div>
+
+      {/* Create Resource Modal */}
+      {showCreateModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={() => setShowCreateModal(false)}>
+          <div className="card" style={{ maxWidth: '500px', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '16px' }}>
+              Create {activeTab === 'kv' ? 'KV Namespace' : activeTab === 'd1' ? 'D1 Database' : 'R2 Bucket'}
+            </h3>
+            <input
+              type="text"
+              placeholder="Enter resource name..."
+              value={newResourceName}
+              onChange={(e) => setNewResourceName(e.target.value)}
+              className="input"
+              style={{ marginBottom: '16px' }}
+              onKeyPress={(e) => e.key === 'Enter' && createResource()}
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="btn btn-secondary"
+                disabled={creating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createResource}
+                className="btn btn-primary"
+                disabled={creating || !newResourceName.trim()}
+              >
+                {creating ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
