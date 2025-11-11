@@ -19,6 +19,7 @@ export interface Env {
   CACHE: KVNamespace;
   MCP_OAUTH: KVNamespace;
   MEMORY: KVNamespace;
+  CREDENTIALS_KV: KVNamespace;  // NEW: For secure credential storage
 
   // 15 Cloudflare MCP Servers
   MCP_DOCS: McpServer;
@@ -105,6 +106,7 @@ export interface AgentConfig {
   backstory: string;
   memoryEnabled?: boolean;
   sequentialThinkingEnabled?: boolean;
+  credentials?: Record<string, string>;  // NEW: Agent-specific credentials
 }
 
 export interface AgentState {
@@ -198,4 +200,21 @@ export interface AuditLog {
   allowed: boolean;
   reason?: string;
   timestamp: string;
+}
+
+// NEW: Credential management types
+export interface Credential {
+  label: string;
+  value: string;
+  createdAt?: string;
+  updatedAt?: string;
+  usedBy?: string[];  // Agent IDs that use this credential
+}
+
+export interface CredentialMetadata {
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+  usedBy: string[];
+  // Note: value is never exposed in metadata
 }
